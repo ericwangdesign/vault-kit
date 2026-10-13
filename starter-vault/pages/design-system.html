@@ -1,0 +1,215 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Design system</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/fonts/geist.css">
+<link rel="stylesheet" href="/vault.css">
+<script src="/vault.js"></script>
+<!--
+  Notes and canvas pages share one set of tokens (app/style.js, served as /vault.css). Everything here is drawn from
+  them, and every value printed is read back from the page, so it can't drift.
+-->
+<style>
+  .ds-lede { margin-top: var(--s5); color: var(--text-body); max-width: var(--measure); text-wrap: pretty; }
+  .ds h2 { margin: var(--s8) 0 var(--s1); font-size: var(--t-lg); line-height: var(--lh-lg); font-weight: var(--w-medium); letter-spacing: var(--tr-snug); color: var(--text); }
+  .ds h3 { margin: var(--s6) 0 var(--s3); font-size: var(--t-md); line-height: var(--lh-md); font-weight: var(--w-medium); color: var(--text); }
+  .ds .cap { margin-top: var(--s1); font-size: var(--t-sm); line-height: var(--lh-sm); color: var(--text-3); text-wrap: pretty; }
+  .ds .v { color: var(--text-3); font-size: var(--t-sm); line-height: var(--lh-sm); font-variant-numeric: tabular-nums; }
+
+  /* swatches: a card, the colour 4px in, its name under it */
+  .sw-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(144px, 1fr)); gap: var(--s2); }
+  .chip { padding: var(--s1); border-radius: var(--r-md); background: var(--surface); }
+  .chip i { display: block; height: 56px; border-radius: var(--r-sm); }
+  .chip .ink { display: grid; place-items: center; height: 56px; border-radius: var(--r-sm); background: var(--bg); font-size: var(--t-lg); font-weight: var(--w-medium); }
+  .chip .ink.on-card { background: var(--surface); }
+  .chip .ink.on-blue { background: var(--accent-soft); }
+  .chip .ink.on-solid { background: var(--accent); }
+  .chip b { display: block; padding: var(--s2) var(--s2) 0; font-weight: var(--w-medium); font-size: var(--t-sm); line-height: var(--lh-sm); }
+  .chip .v { display: block; padding: 0 var(--s2) var(--s1); }
+  /* see-through tokens sit on a card so you see what they do to it */
+  .chip i.over { background: var(--surface); position: relative; }
+  .chip i.over::after { content: ""; position: absolute; inset: 0; border-radius: inherit; background: var(--c); }
+
+  /* type: the sample, its name and numbers beside it */
+  .ladder { display: flex; flex-direction: column; gap: 2px; padding: var(--s1); border-radius: var(--r-md); background: var(--surface); }
+  .step { display: grid; grid-template-columns: minmax(0, 1fr) 132px; align-items: baseline; gap: var(--s3); padding: var(--s2) var(--s3); border-radius: var(--r-sm); }
+  .step:hover { background: var(--hover); }
+  .step .s { min-width: 0; color: var(--text); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+  .step .n { text-align: right; white-space: nowrap; }
+  .step .n b { margin-right: var(--s2); font-weight: var(--w-medium); color: var(--text-2); }
+  @media (max-width: 560px) { .step { grid-template-columns: 1fr; gap: 0; } .step .n { text-align: left; } .step .s { white-space: normal; } }
+
+  /* space and radius */
+  .bars { display: flex; flex-direction: column; gap: 2px; padding: var(--s1); border-radius: var(--r-md); background: var(--surface); }
+  .bar { display: grid; grid-template-columns: 56px minmax(0, 1fr) 40px; align-items: center; gap: var(--s3); padding: var(--s2) var(--s3); }
+  .bar b { font-weight: var(--w-medium); font-size: var(--t-sm); color: var(--text-2); }
+  .bar i { display: block; height: var(--s4); border-radius: var(--r-2xs); background: var(--accent); }
+  .bar .v { text-align: right; }
+  .radii { display: grid; grid-template-columns: repeat(auto-fill, minmax(96px, 1fr)); gap: var(--s2); }
+  .radii .chip i { height: 72px; background: var(--fill-2); }
+
+  /* parts, built from the tokens the way the reader builds its own */
+  .demo { padding: var(--s1); border-radius: var(--r-md); background: var(--surface); }
+  .demo + .demo { margin-top: var(--s2); }
+  .row { display: grid; grid-template-columns: 20px minmax(0, 1fr) auto; align-items: center; gap: var(--s3); padding: var(--s3); border-radius: var(--r-sm); }
+  .row:hover { background: var(--hover); }
+  .row .mk { width: 20px; height: 20px; border-radius: var(--r-xs); background: var(--fill); }
+  .row b { display: block; font-weight: var(--w-medium); color: var(--text); }
+  .row span { display: block; font-size: var(--t-sm); line-height: var(--lh-sm); color: var(--text-3); }
+  .row .m { font-size: var(--t-sm); color: var(--text-3); display: flex; align-items: center; gap: var(--s2); }
+  .row .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--accent); }
+  .bits { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2); padding: var(--s3); }
+  .pill { display: inline-flex; align-items: center; height: 24px; padding: 0 var(--s2); border-radius: var(--r-pill); font-size: var(--t-sm); background: var(--hover-2); color: var(--text-2); }
+  .pill.blue { background: var(--accent-soft); color: var(--accent-ink); }
+  .btn { display: inline-flex; align-items: center; height: 28px; padding: 0 var(--s3); border-radius: var(--r-pill); font-size: var(--t-md); background: var(--hover-2); color: var(--text); }
+  .btn.primary { background: var(--btn); color: var(--btn-text); }
+  /* Geist joins -- into a dash; a token's name keeps its two hyphens and stays on one line */
+  .k { padding: 0 var(--s1); border-radius: var(--r-xs); background: var(--fill); color: var(--text); white-space: nowrap; font-feature-settings: "calt" 0, "liga" 0; }
+  .num { display: inline-grid; place-items: center; width: 20px; height: 20px; border-radius: 50%; background: var(--accent); color: var(--on-accent); font-size: var(--t-xs); font-weight: var(--w-medium); }
+  .p { padding: var(--s3); color: var(--text-body); text-wrap: pretty; }
+  .p strong { font-weight: var(--w-bold); color: var(--text); }
+
+  /* where it lives */
+  .files { display: flex; flex-direction: column; gap: 2px; padding: var(--s1); border-radius: var(--r-md); background: var(--surface); }
+  .files div { padding: var(--s2) var(--s3); }
+  .files b { display: block; font-weight: var(--w-medium); color: var(--text); }
+  .files div > span { display: block; font-size: var(--t-sm); line-height: var(--lh-sm); color: var(--text-3); }
+
+</style>
+</head>
+<body>
+<div class="frame ds" data-rail>
+  <a class="up" href="/">Home</a>
+  <!-- the switch, from the reader's own pages -->
+  <button type="button" class="sw" id="themeSw" aria-label="Switch day and night"><svg class="sun" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" aria-hidden="true"><circle cx="8" cy="8" r="3"/><path d="M8 1.5v1.6M8 12.9v1.6M1.5 8h1.6M12.9 8h1.6M3.4 3.4l1.1 1.1M11.5 11.5l1.1 1.1M3.4 12.6l1.1-1.1M11.5 4.5l1.1-1.1"/></svg><svg class="moon" viewBox="0 0 16 16" fill="none" stroke="currentColor" stroke-width="1.4" stroke-linejoin="round" aria-hidden="true"><path d="M13.6 9.9A5.6 5.6 0 0 1 6.1 2.4a5.6 5.6 0 1 0 7.5 7.5z"/></svg></button>
+
+  <div class="note-head">
+    <h1>Design system</h1>
+    <div class="sub"><span>Notes</span><span>Writing canvas</span></div>
+  </div>
+  <p class="ds-lede">One set of tokens. Notes and canvas pages read the same file. Switch day and night at the top right: every value below is read live.</p>
+
+  <h2 id="colour">Colour</h2>
+  <p class="cap">Solid greys mixed from the ink, so nothing changes colour where two things overlap.</p>
+
+  <h3>Grounds</h3>
+  <div class="sw-grid" data-sw="panel bg surface surface-2"></div>
+
+  <h3>Text</h3>
+  <div class="sw-grid" data-ink="text text-body text-2 text-3"></div>
+  <p class="cap">Titles, running text, secondary, labels. Each one passes AA on the page and on a card.</p>
+
+  <h3>Fills</h3>
+  <div class="sw-grid" data-sw="raised fill wire fill-2"></div>
+  <p class="cap">On a card: something raised, a chip, a connector, the grey that isn't the point.</p>
+
+  <h3>Hovers and lines</h3>
+  <div class="sw-grid" data-over="hover hover-2 line line-2"></div>
+
+  <h3>Accent</h3>
+  <div class="sw-grid" data-sw="accent accent-soft"></div>
+  <div class="sw-grid" style="margin-top: var(--s2)">
+    <div class="chip"><div class="ink on-blue" style="color: var(--accent-ink)">Picked</div><b>accent-ink</b><span class="v" data-val="accent-ink"></span></div>
+    <div class="chip"><div class="ink on-solid" style="color: var(--on-accent)">1</div><b>on-accent</b><span class="v" data-val="on-accent"></span></div>
+  </div>
+  <p class="cap">Blue is the only accent. Blue text on the soft blue, never grey.</p>
+
+  <h3>Status</h3>
+  <div class="sw-grid" data-sw="ok bad"></div>
+
+  <h2 id="type">Type</h2>
+  <p class="cap">Geist only. Geist Mono in code and nowhere else. Levels differ by size or colour, never weight alone.</p>
+  <div class="ladder" style="margin-top: var(--s3)" data-type="2xl:Big numbers title:Page title lg:Section heading md:Body, names, shape titles sm:Labels, meta, captions ui:Tool panels, code xs:Badges, pins, ticks"></div>
+
+  <h3>Weight</h3>
+  <div class="ladder">
+    <div class="step"><span class="s" style="font-weight: var(--w-body)">Running text</span><span class="n v"><b>w-body</b><span data-val="w-body"></span></span></div>
+    <div class="step"><span class="s" style="font-weight: var(--w-medium)">Titles, headings, names</span><span class="n v"><b>w-medium</b><span data-val="w-medium"></span></span></div>
+    <div class="step"><span class="s" style="font-weight: var(--w-bold)">Bold in running text</span><span class="n v"><b>w-bold</b><span data-val="w-bold"></span></span></div>
+  </div>
+
+  <h2 id="space">Space</h2>
+  <p class="cap">A 4 grid, with 2 as the half step. Padding is the same on every side.</p>
+  <div class="bars" style="margin-top: var(--s3)" data-space="s0 s1 s2 s3 s4 s5 s6 s7 s8 s9"></div>
+
+  <h2 id="radius">Radius</h2>
+  <p class="cap">On the same grid. Something rounded inside a card takes the card's radius minus the gap.</p>
+  <div class="radii" style="margin-top: var(--s3)" data-radius="r-2xs r-xs r-sm r-md r-lg r-pill"></div>
+
+  <h2 id="parts">Parts</h2>
+  <p class="cap">A card is a fill, never an outline. A row is told apart by its hover, not a line.</p>
+  <div style="margin-top: var(--s3)">
+    <div class="demo">
+      <div class="row"><i class="mk"></i><div><b>First project</b><span>Something you're making</span></div><span class="m"><i class="dot"></i>Today</span></div>
+      <div class="row"><i class="mk"></i><div><b>Writing canvas</b><span>Explain anything as a page of shapes</span></div><span class="m">Yesterday</span></div>
+      <div class="row"><i class="mk"></i><div><b>Reading list</b><span>Things worth going back to</span></div><span class="m">Last week</span></div>
+    </div>
+    <div class="demo">
+      <div class="bits"><span class="pill">Active</span><span class="pill blue">Picked</span><span class="btn">Notes</span><span class="btn primary">Open</span><span class="num">1</span><span class="num">2</span></div>
+      <p class="p">Running text sits a step under titles, and <strong>bold</strong> takes the full ink. A name in a sentence is a chip: <span class="k">--accent</span>.</p>
+    </div>
+  </div>
+
+<h2 id="files">Where it lives</h2>
+  <div class="files" style="margin-top: var(--s3)">
+    <div><b>app/style.js</b><span>The tokens. Served to pages as /vault.css. Change a value here and the vault and the canvas both move.</span></div>
+    <div><b>app/canvas/canvas.css</b><span>Only what the canvas adds: padding, the sizes of its small parts, the switch.</span></div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var root = document.documentElement;
+  var cv = document.createElement('canvas'); cv.width = cv.height = 1;
+  var cx = cv.getContext('2d', { willReadFrequently: true });
+  var probe = document.createElement('i'); probe.style.display = 'none'; document.body.appendChild(probe);
+  function raw(n) { return getComputedStyle(root).getPropertyValue('--' + n).trim(); }
+  // A token can be a mix or an oklch; let the browser resolve it, then read the pixel back as hex.
+  function hex(n) {
+    probe.style.color = 'var(--' + n + ')';
+    var c = getComputedStyle(probe).color;
+    cx.clearRect(0, 0, 1, 1); cx.fillStyle = '#000'; cx.fillStyle = c; cx.fillRect(0, 0, 1, 1);
+    var d = cx.getImageData(0, 0, 1, 1).data, h = '#' + [d[0], d[1], d[2]].map(function (x) { return x.toString(16).padStart(2, '0'); }).join('');
+    return d[3] < 255 ? h + ' · ' + Math.round(d[3] / 2.55) + '%' : h;
+  }
+  function px(n) { return raw(n).replace('px', ''); }
+  function el(html) { var t = document.createElement('template'); t.innerHTML = html.trim(); return t.content.firstChild; }
+
+  document.querySelectorAll('[data-sw]').forEach(function (g) {
+    g.dataset.sw.split(' ').forEach(function (n) { g.appendChild(el('<div class="chip"><i style="background: var(--' + n + ')"></i><b>' + n + '</b><span class="v" data-val="' + n + '"></span></div>')); });
+  });
+  document.querySelectorAll('[data-over]').forEach(function (g) {
+    g.dataset.over.split(' ').forEach(function (n) { g.appendChild(el('<div class="chip"><i class="over" style="--c: var(--' + n + ')"></i><b>' + n + '</b><span class="v" data-val="' + n + '"></span></div>')); });
+  });
+  document.querySelectorAll('[data-ink]').forEach(function (g) {
+    g.dataset.ink.split(' ').forEach(function (n) { g.appendChild(el('<div class="chip"><div class="ink" style="color: var(--' + n + ')">Aa</div><b>' + n + '</b><span class="v" data-val="' + n + '"></span></div>')); });
+  });
+  document.querySelectorAll('[data-type]').forEach(function (g) {
+    g.dataset.type.split(/ (?=[a-z0-9]+:)/).forEach(function (p) {
+      var k = p.split(':')[0], use = p.split(':')[1];
+      var lh = k === 'ui' ? 'lh-ui' : 'lh-' + k;
+      g.appendChild(el('<div class="step"><span class="s" style="font-size: var(--t-' + k + '); line-height: var(--' + lh + ')' + (/2xl|title|lg/.test(k) ? '; font-weight: var(--w-medium); letter-spacing: var(--tr-snug)' : '') + '">' + use + '</span><span class="n v"><b>t-' + k + '</b><span data-size="' + k + '"></span></span></div>'));
+    });
+  });
+  document.querySelectorAll('[data-space]').forEach(function (g) {
+    g.dataset.space.split(' ').forEach(function (n) { g.appendChild(el('<div class="bar"><b>' + n + '</b><span><i style="width: var(--' + n + ')"></i></span><span class="v" data-px="' + n + '"></span></div>')); });
+  });
+  document.querySelectorAll('[data-radius]').forEach(function (g) {
+    g.dataset.radius.split(' ').forEach(function (n) { g.appendChild(el('<div class="chip"><i style="border-radius: max(var(--' + n + ') - 4px, 0px)"></i><b>' + n + '</b><span class="v" data-px="' + n + '"></span></div>')); });
+  });
+
+  function fill() {
+    document.querySelectorAll('[data-val]').forEach(function (e) { var n = e.dataset.val; e.textContent = /^w-/.test(n) ? raw(n) : hex(n); });
+    document.querySelectorAll('[data-px]').forEach(function (e) { e.textContent = px(e.dataset.px); });
+    document.querySelectorAll('[data-size]').forEach(function (e) { var k = e.dataset.size; e.textContent = px('t-' + k) + ' / ' + px('lh-' + k); });
+  }
+  fill();
+  // the switch crossfades for .45s; read again once it lands
+  new MutationObserver(function () { fill(); setTimeout(fill, 500); }).observe(root, { attributes: true, attributeFilter: ['data-mode'] });
+})();
+</script>
+</body>
+</html>
