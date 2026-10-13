@@ -32,7 +32,7 @@
     var hits = (t ? (NOTES || []).filter(function (n) { return n.s.indexOf(t) > -1; }) : (NOTES || [])).slice(0, 40);
     cursor = 0;
     var rows = cmds.map(function (c) { return '<a class="result" href="' + (c.href || '#') + '" data-cmd="' + COMMANDS.indexOf(c) + '"><span>' + c.t + '</span><span class="kind">' + c.k + '</span></a>'; })
-      .concat(hits.map(function (n) { return '<a class="result" href="/n/' + encodeURIComponent(n.n) + '"><span>' + escH(n.t) + (n.d ? '<small>' + escH(n.d) + '</small>' : '') + '</span><span class="kind">' + escH(n.k) + '</span></a>'; }));
+      .concat(hits.map(function (n) { return '<a class="result" href="' + (n.h || '/n/' + encodeURIComponent(n.n)) + '"><span>' + escH(n.t) + (n.d ? '<small>' + escH(n.d) + '</small>' : '') + '</span><span class="kind">' + escH(n.k) + '</span></a>'; }));
     sres.innerHTML = rows.length ? rows.join('') : '<p class="no-hits">No notes match that.</p>';
     var first = sres.querySelector('.result'); if (first) first.classList.add('cursor');
   }
@@ -76,36 +76,7 @@
   rc.addEventListener('click', function (e) { if (e.target === rc) rcClose(); });
   addEventListener('intake:sent', function () { if (rc.classList.contains('open')) rcLoad(); });
 
-  /* ---------- to do ---------- */
-  // Ticking happens in place: the line numbers only move when an item is added or removed.
-  document.querySelectorAll('.todo[data-line]').forEach(function (el) {
-    var busy = false;
-    var flip = function (e) {
-      if (e && e.target.closest('a, .todo-rm')) return;
-      if (busy) return; busy = true;
-      var done = !el.classList.contains('done');
-      el.classList.toggle('done', done); el.setAttribute('aria-checked', done);
-      post('/todo/' + el.dataset.line, { done: done }).then(function (r) { if (!r.ok) throw 0; })
-        .catch(function () { el.classList.toggle('done', !done); el.setAttribute('aria-checked', !done); })
-        .then(function () { busy = false; });
-    };
-    el.addEventListener('click', flip);
-    el.addEventListener('keydown', function (e) { if ((e.key === ' ' || e.key === 'Enter') && e.target === el) { e.preventDefault(); flip(); } });
-  });
-  document.querySelectorAll('.todo-rm').forEach(function (b) {
-    b.addEventListener('click', function (e) {
-      e.stopPropagation(); b.disabled = true;
-      post('/todo/' + b.dataset.line, { remove: true }).then(function (r) { if (r.ok) { sessionStorage.setItem('vault.scroll', String(scrollY)); location.reload(); } else b.disabled = false; });
-    });
-  });
-  var todoAdd = document.querySelector('form.todo-add');
-  if (todoAdd) todoAdd.addEventListener('submit', function (e) {
-    e.preventDefault();
-    var input = todoAdd.querySelector('input'), text = input.value.trim();
-    if (!text) return;
-    input.disabled = true;
-    post('/todo/add', { text: text }).then(function (r) { if (r.ok) location.reload(); else input.disabled = false; });
-  });
+  /* ---------- to do: its own script on /todo (TODO_JS in server.js) ---------- */
 
   /* ---------- archive ---------- */
   // Archiving re-groups the whole shelf, so the honest move is to re-render, keeping the scroll.

@@ -9,13 +9,14 @@ const FONTS = {
 
 const OPTIONS = {
   font:    { label: 'Typeface', values: Object.entries(FONTS).map(([k, v]) => [k, v[0]]) },
-  size:    { label: 'Text size', values: [['14px', '14'], ['15px', '15'], ['16px', '16'], ['17px', '17']] },
-  leading: { label: 'Line height', values: [['1.55', 'Tight'], ['1.7', 'Normal'], ['1.85', 'Loose']] },
-  measure: { label: 'Column', values: [['580px', 'Narrow'], ['680px', 'Normal'], ['760px', 'Wide']] },
+  size:    { label: 'Text size', values: [['14px', '14'], ['16px', '16'], ['20px', '20']] },
+  leading: { label: 'Line height', values: [['1.3', 'Tight'], ['1.43', 'Normal'], ['1.6', 'Loose']] },
+  measure: { label: 'Column', values: [['560px', 'Narrow'], ['640px', 'Normal'], ['720px', 'Wide']] },
 };
 
-// These only touch reading text (.prose); the frame around it stays put.
-const DEFAULTS = { font: 'geist', size: '15px', leading: '1.7', measure: '680px' };
+// These only touch reading text (.prose); the frame around it stays put. The defaults are the writing canvas's
+// body (14 on 20, a 640 column), so a note and a canvas page read the same (Oct 12, 2026).
+const DEFAULTS = { font: 'geist', size: '14px', leading: '1.43', measure: '640px' };
 const FAMILIES = Object.fromEntries(Object.entries(FONTS).map(([k, v]) => [k, v[1]]));
 
 const APPLY = `
@@ -33,7 +34,9 @@ export const BOOT_JS = `
   var FONTS = ${JSON.stringify(FAMILIES)};
   var D = ${JSON.stringify(DEFAULTS)};
   var s = D;
-  try { s = Object.assign({}, D, JSON.parse(localStorage.getItem('vault.type.v4') || '{}')); } catch (e) {}
+  try { s = Object.assign({}, D, JSON.parse(localStorage.getItem('vault.type.v5') || '{}')); } catch (e) {}
+  // A size saved before the type scale (15, 17) falls back to the default.
+  if (['14px', '16px', '20px'].indexOf(s.size) < 0) s.size = D.size;
   ${APPLY}
   applyType(s);
   window.__type = s;
@@ -65,7 +68,7 @@ export const SETTINGS_JS = `
   ${APPLY}
   function sync() {
     applyType(state);
-    localStorage.setItem('vault.type.v4', JSON.stringify(state));
+    localStorage.setItem('vault.type.v5', JSON.stringify(state));
     panel.querySelectorAll('.seg').forEach(function (s) {
       s.querySelectorAll('button').forEach(function (b) {
         b.setAttribute('aria-pressed', String(b.dataset.value === state[s.dataset.key]));

@@ -27,7 +27,19 @@ Every note is a `.md` file with a short frontmatter block. Its `type:` decides w
 | `user`, `feedback` | About |
 | `todo` | To do (`todo.md`, plain `- [ ]` lines) |
 
-Captures (⌘I, or the box on Today) land in `inbox.md`. `app/skills/sort-inbox/SKILL.md` tells Claude how to file them. Say "sort" in a Claude Code session in the vault, or start the reader with `VAULT_SORTER=1` to let it sort on its own (needs the `claude` CLI).
+Captures (⌘I, or the box on Today) land in `inbox.md`. `app/skills/sort-inbox/SKILL.md` tells an agent how to file them. Say "sort" to any coding agent pointed at this repo (see `AGENTS.md`), or start the reader with `VAULT_SORTER=1` to let it sort on its own (that one needs the `claude` CLI).
+
+## Writing canvas
+
+A page of shapes instead of paragraphs: before and after, a flow, a decision, a chart. The agent writes the page as JSON in `<vault>/pages/<slug>.html`; the renderer in `app/canvas/` draws it at `/pages/<slug>.html`. The rules are in `app/skills/writing-canvas/SKILL.md`, every shape's fields in `reference.md` next to it, and `starter-vault/pages/writing-canvas.html` is the system written in itself.
+
+Check a page before calling it done (with the reader running):
+
+```sh
+cd app && VAULT_PATH=<vault> node canvas/check.mjs <vault>/pages/<slug>.html
+```
+
+Screenshots (`canvas/shot.mjs`) and the layout check use Google Chrome from `/Applications`.
 
 ## Putting it on the web (optional)
 
