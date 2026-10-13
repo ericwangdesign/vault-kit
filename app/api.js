@@ -1,7 +1,7 @@
 // The JSON face of the vault. The HTML pages are one client of this; a phone
 // or an iOS app is another. Every write lands in a file and then in git, so
 // the history of the notebook is the history of the repo — no second store.
-import { readFileSync, writeFileSync, existsSync } from 'node:fs';
+import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { execFile } from 'node:child_process';
 import { join } from 'node:path';
 import { allNotes, byName, VAULT } from './vault.js';
@@ -154,6 +154,38 @@ const body = (req) => new Promise((resolve, reject) => {
 // server.js plugs the sorter in here, so a capture can start a sort without api.js knowing about it.
 export const hooks = { capture: () => {} };
 
+/* ---------- what a page remembers ---------- */
+
+// An interactive page keeps what its owner leaves on it (a pick, a tick, a setting) in one JSON file per page in
+// pages/_state/, so it is the same on his phone and his desk, it lands in git, and Claude can read it there.
+// /pages/trip.html and /pages/trip/ are both "trip"; a page in a folder is "folder--page".
+const STATE_DIR = join(VAULT, 'pages', '_state');
+const STATE_MAX = 256 * 1024;
+export function stateFile(page) {
+  const m = /^\/pages\/([\w.\/-]+)$/.exec(String(page || ''));
+  if (!m || m[1].includes('..')) return null;
+  const slug = m[1].replace(/(^|\/)index\.html$/, '').replace(/\/$/, '').replace(/\.html$/, '').replace(/\//g, '--');
+  if (!slug || slug.startsWith('_')) return null;
+  return join(STATE_DIR, slug + '.json');
+}
+const readState = (file) => { try { return JSON.parse(readFileSync(file, 'utf8')); } catch { return {}; } };
+// A page can save on every tick; git hears about it once things go quiet.
+const stateCommits = new Map();
+function patchState(page, patch) {
+  const file = stateFile(page);
+  if (!file) throw new Error('not a page');
+  if (!patch || typeof patch !== 'object' || Array.isArray(patch)) throw new Error('state is an object of keys');
+  const state = readState(file);
+  for (const [k, v] of Object.entries(patch)) { if (v === null) delete state[k]; else state[k] = v; }
+  const text = JSON.stringify(state, null, 2) + '\n';
+  if (text.length > STATE_MAX) throw new Error('state too big');
+  mkdirSync(STATE_DIR, { recursive: true });
+  writeFileSync(file, text);
+  clearTimeout(stateCommits.get(file));
+  stateCommits.set(file, setTimeout(() => { stateCommits.delete(file); commit(`page state: ${page}`); }, 30000));
+  return state;
+}
+
 // Returns true when it answered the request, false to let the pages have it.
 export async function api(req, res, url) {
   if (!url.pathname.startsWith('/api/')) return false;
@@ -172,6 +204,12 @@ export async function api(req, res, url) {
     }
     if (p === '/inbox' && m === 'GET') return json(res, 200, readInbox()), true;
     if (p === '/inbox' && m === 'POST') { const b = await body(req); const out = appendInbox(b.text); hooks.capture(); return json(res, 200, out), true; }
+    if (p === '/page-state') {
+      const page = url.searchParams.get('page'), file = stateFile(page);
+      if (!file) return json(res, 400, { error: 'not a page' }), true;
+      if (m === 'GET') return json(res, 200, readState(file)), true;
+      if (m === 'PATCH' || m === 'POST') { const b = await body(req); return json(res, 200, patchState(page, b)), true; }
+    }
     if (p === '/whoami' && m === 'GET') return json(res, 200, { ok: true }), true;
     return json(res, 404, { error: 'no such route' }), true;
   } catch (e) {

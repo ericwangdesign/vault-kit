@@ -19,7 +19,7 @@ import { capturePage, CAPTURE_MANIFEST, CAPTURE_SW } from './capture.js';
 const FAVICON = readFileSync(new URL('./favicon.png', import.meta.url));
 import { propsPanel, PROPS_JS } from './props.js';
 import { todayData, readSorted } from './today.js';
-import { allPages, homelessPages, pageFile } from './pages.js';
+import { allPages, homelessPages, pageFile, PAGE_TYPES } from './pages.js';
 import { viewPage } from './view.js';
 // The browser's side of every page, and of Today. Plain files, so they can be read as code.
 const SHELL_JS = readFileSync(new URL('./shell-client.js', import.meta.url), 'utf8');
@@ -118,6 +118,38 @@ document.addEventListener('DOMContentLoaded', function () {
   addEventListener('animationend', fit);  // the page's rise moves the rail while it plays
   new MutationObserver(fit).observe(document.documentElement, { attributes: true, attributeFilter: ['style'] });
 });
+
+// What a page remembers. Kept in the vault (pages/_state/<page>.json), so a pick made on the phone is there on the
+// desk, and Claude can read it:  var picks = await vault.state.get('picks');  vault.state.set('picks', picks);
+// A burst of set()s goes out as one save. Off the vault (a file opened from disk) it keeps to this browser.
+(function () {
+  var base = '/api/page-state?page=' + encodeURIComponent(location.pathname), key = 'vault.state:' + location.pathname;
+  var all = null, pending = {}, timer = 0;
+  function local() { try { return JSON.parse(localStorage.getItem(key) || '{}'); } catch (e) { return {}; } }
+  function keep(s) { try { localStorage.setItem(key, JSON.stringify(s)); } catch (e) {} }
+  function load() {
+    return all || (all = fetch(base, { credentials: 'same-origin' })
+      .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
+      .then(function (s) { keep(s); return s; }, local));
+  }
+  function flush() {
+    var p = pending; pending = {}; clearTimeout(timer);
+    if (Object.keys(p).length) fetch(base, { method: 'PATCH', keepalive: true, credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(p) }).catch(function () {});
+  }
+  window.vault = window.vault || {};
+  window.vault.state = {
+    get: function (k) { return load().then(function (s) { return k == null ? s : s[k]; }); },
+    set: function (k, v) {
+      return load().then(function (s) {
+        if (v == null) delete s[k]; else s[k] = v;
+        keep(s); pending[k] = v == null ? null : v;
+        clearTimeout(timer); timer = setTimeout(flush, 400);
+        return v;
+      });
+    },
+  };
+  addEventListener('pagehide', flush);
+})();
 `;
 
 /* ---------- shell ---------- */
@@ -1270,9 +1302,16 @@ async function handle(req, res) {
   if (url.pathname === '/pages' || url.pathname === '/pages/') { res.writeHead(302, { location: '/inbox' }).end(); return; }
   if (url.pathname === '/about') { res.writeHead(301, { location: '/personal' }).end(); return; }
   if (url.pathname.startsWith('/pages/')) {
-    const file = pageFile(url.pathname);
-    if (!file || !existsSync(file) || statSync(file).isDirectory()) { res.writeHead(404).end(); return; }
-    res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
+    let file = pageFile(url.pathname);
+    // A page with its own files is a folder, served from its index.html. Its address ends in a slash, so the
+    // page's relative links (app.js, data.json) land inside the folder.
+    if (file && existsSync(file) && statSync(file).isDirectory()) {
+      if (!url.pathname.endsWith('/')) { res.writeHead(301, { location: url.pathname + '/' + url.search }).end(); return; }
+      file = join(file, 'index.html');
+    }
+    const type = file && PAGE_TYPES[extname(file).toLowerCase()];
+    if (!type || !existsSync(file) || statSync(file).isDirectory()) { res.writeHead(404).end(); return; }
+    res.writeHead(200, { 'content-type': type, 'cache-control': 'no-store' });
     res.end(readFileSync(file));
     return;
   }

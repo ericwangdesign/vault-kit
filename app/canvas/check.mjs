@@ -63,15 +63,18 @@ export const CATALOG = {
   stats: { group: 'amount', need: ['items'], asks: 'How much?', when: '2 to 4 numbers that carry the point, each with what it is compared to.' },
   treemap: { group: 'amount', titled: true, need: ['data'], asks: 'What is it made of, by size?', when: '5 to 15 parts of one whole, or parts with parts. 2 to 4 parts is a share chart.' },
   chart: { group: 'amount', titled: true, need: ['kind'], asks: 'Which is biggest? What share? Up or down?', when: 'bar: 3 to 12 amounts. share: 2 to 4 parts of a whole. ring: one value out of a whole. funnel: 3 to 8 steps people drop out of, in order. line: 5+ points in time.' },
+
+  // Something to use. When trying it says the point better than any picture of it: a slider, a picker, a toy, a tool.
+  live: { group: 'use', titled: true, need: [], asks: 'What happens when I try it?', when: 'The point lands by doing: drag, tune, pick, filter, play. A page\'s own <template>, or a page of its own in a frame.' },
 };
 const SHAPES = Object.keys(CATALOG).filter((k) => CATALOG[k].group !== 'words');
 
 /* ---------- the arcs ----------
    A page is one of these. Each is an order of slots; a slot is filled by any of its shapes. `end` must close the page. */
 export const ARCS = {
-  decision:  { say: 'A choice, made or still to make. Why, and what it costs.', slots: [['beforeAfter', 'figure', 'variants', 'compare'], ['flow', 'sequence', 'tree', 'steps', 'figure', 'beforeAfter'], ['compare', 'variants', 'matrix'], ['decision']], end: 'decision' },
-  shipped:   { say: 'Something changed. What, where, and what is still open.', slots: [['beforeAfter', 'tabs'], ['tree', 'flow', 'sequence', 'figure', 'steps', 'table'], ['timeline', 'stats', 'checklist']] },
-  explainer: { say: 'How something works, for someone new to it.', slots: [['figure', 'tree', 'flow', 'sequence', 'steps', 'tabs'], ['flow', 'sequence', 'steps', 'figure', 'compare', 'variants', 'chart', 'table', 'treemap']] },
+  decision:  { say: 'A choice, made or still to make. Why, and what it costs.', slots: [['beforeAfter', 'figure', 'variants', 'compare', 'live'], ['flow', 'sequence', 'tree', 'steps', 'figure', 'beforeAfter'], ['compare', 'variants', 'matrix', 'live'], ['decision']], end: 'decision' },
+  shipped:   { say: 'Something changed. What, where, and what is still open.', slots: [['beforeAfter', 'tabs', 'live'], ['tree', 'flow', 'sequence', 'figure', 'steps', 'table'], ['timeline', 'stats', 'checklist']] },
+  explainer: { say: 'How something works, for someone new to it.', slots: [['figure', 'tree', 'flow', 'sequence', 'steps', 'tabs', 'live'], ['flow', 'sequence', 'steps', 'figure', 'compare', 'variants', 'chart', 'table', 'treemap', 'live']] },
   plan:      { say: 'What happens next, and when.', slots: [['gantt', 'timeline', 'calendar', 'steps', 'checklist'], ['decision', 'compare', 'stats', 'checklist']] },
   review:    { say: 'A look back at a stretch of my own work.', slots: [['stats', 'chart', 'treemap'], ['timeline', 'gantt', 'calendar', 'heatmap'], ['variants', 'beforeAfter', 'figure', 'tabs']] },
   reference: { say: 'A catalog page: one of each shape, shown on real data. Only for the system\'s own docs.', slots: [] },
@@ -92,6 +95,8 @@ export function check(spec, file = 'page') {
   const out = [], err = (at, msg) => out.push({ level: 'error', at, msg }), warn = (at, msg) => out.push({ level: 'warn', at, msg });
   if (!spec || typeof spec !== 'object') { err('page', 'No spec.'); return out; }
   if (!spec.title) err('page', 'No title.');
+  // The page around the spec, so a live block's <template> can be found.
+  const html = /\.html$/.test(file) && existsSync(file) ? readFileSync(file, 'utf8') : '';
   if (!spec.dek) warn('page', 'No dek. Two sentences that tell the whole story.');
   else if (words(spec.dek) > 50) warn('page', `Dek is ${words(spec.dek)} words. Two sentences, under 50.`);
   if (spec.arc && !ARCS[spec.arc]) err('page', `Unknown arc "${spec.arc}". One of: ${Object.keys(ARCS).join(', ')}.`);
@@ -129,6 +134,11 @@ export function check(spec, file = 'page') {
         if (b.picked != null && (b.picked < 0 || b.picked >= n)) err(at, '`picked` is not one of the options.');
         break;
       }
+      case 'live':
+        if (!b.template === !b.src) err(at, 'A live piece takes one of `template` (the id of a <template> in the page) or `src` (a page of its own).');
+        if (b.template && html && !html.includes(`<template id="${b.template}"`)) err(at, `No <template id="${b.template}"> in the page.`);
+        if (b.src && !/^\/pages\//.test(b.src)) warn(at, '`src` outside /pages/: a framed page off the vault can\'t be sized or follow day and night.');
+        break;
       case 'decision':
         if (!b.chose && !b.open) err(at, 'A decision needs `chose`, or `open` when it isn\'t made yet.');
         if (b.chose && !(b.cost || []).length) warn(at, 'No cost. Every decision says what it cost.');
@@ -282,6 +292,22 @@ export function check(spec, file = 'page') {
   return out;
 }
 
+/* ---------- a page that isn't a canvas ----------
+   A tool or toy of its own, written as HTML. The spec rules don't apply; the vault's do: its look comes from the
+   reader's own files, never a copied palette, and search can say what it is. */
+export function checkFree(html) {
+  const out = [], err = (msg) => out.push({ level: 'error', at: 'page', msg }), warn = (msg) => out.push({ level: 'warn', at: 'page', msg });
+  if (!/<title>[^<]+<\/title>/i.test(html)) err('No <title>.');
+  if (!/<meta\s+name=["']description["']/i.test(html)) warn('No <meta name="description">. Search reads it first, and a page drawn by script has little else.');
+  for (const f of ['/vault.css', '/vault.js', '/fonts/geist.css']) if (!html.includes(`"${f}"`)) err(`Doesn't link ${f}. Start from vault/pages/_README.md.`);
+  if (!/name=["']viewport["']/.test(html)) err('No viewport meta: it will draw at desktop width on a phone.');
+  const styles = (html.match(/<style[^>]*>[\s\S]*?<\/style>/gi) || []).join('\n').replace(/\/\*[\s\S]*?\*\//g, '');
+  const literals = [...new Set(styles.match(/#[0-9a-f]{3,8}\b|\brgba?\([^)]*\)|\bhsla?\([^)]*\)/gi) || [])];
+  if (literals.length) warn(`Colour literals in <style>: ${literals.slice(0, 4).join(', ')}. Take the token (var(--text), var(--text-3), var(--accent), var(--raised)).`);
+  if (/font-family\s*:(?![^;]*var\()/i.test(styles) && !/font-family\s*:\s*inherit/i.test(styles)) warn('A font-family in <style>. Geist comes from /vault.css; leave it.');
+  return out;
+}
+
 function specOf(file) {
   const s = readFileSync(file, 'utf8');
   if (file.endsWith('.json')) return JSON.parse(s);
@@ -316,7 +342,7 @@ export function checkCss(css) {
 }
 
 /* ---------- the reference: written from the catalog, the arcs and shapes.mjs, never by hand ---------- */
-const GROUPS = [['words', 'Running text'], ['change', 'Change'], ['choice', 'Choice'], ['structure', 'Structure and how it works'], ['time', 'Time'], ['amount', 'Amounts'], ['depth', 'Depth and sources']];
+const GROUPS = [['words', 'Running text'], ['change', 'Change'], ['choice', 'Choice'], ['structure', 'Structure and how it works'], ['time', 'Time'], ['amount', 'Amounts'], ['use', 'Something to use'], ['depth', 'Depth and sources']];
 export function docs() {
   const L = [];
   L.push('# Writing canvas: the reference', '',
@@ -384,7 +410,8 @@ if (fileURLToPath(import.meta.url) === resolve(process.argv[1] || '')) {
   let bad = 0;
   for (const f of files) {
     let res;
-    try { res = check(specOf(f), f); } catch (e) { res = [{ level: 'error', at: 'page', msg: e.message }]; }
+    const html = f.endsWith('.html') ? readFileSync(f, 'utf8') : '';
+    try { res = html && !html.includes('id="canvas"') ? checkFree(html) : check(specOf(f), f); } catch (e) { res = [{ level: 'error', at: 'page', msg: e.message }]; }
     for (const p of drawn[urlOf(f)] || []) res.push({ level: 'error', at: `${p.at} @${p.w}`, msg: p.msg });
     const e = res.filter((r) => r.level === 'error').length, w = res.length - e;
     console.log(`${f}: ${e ? e + ' error' + (e > 1 ? 's' : '') : 'no errors'}, ${w} warning${w === 1 ? '' : 's'}`);

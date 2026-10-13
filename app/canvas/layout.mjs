@@ -9,8 +9,9 @@ export const WIDTHS = [390, 1440];
 // Runs inside the page. Returns [{ at, msg }].
 const AUDIT = `(() => {
   const out = [], de = document.documentElement, main = document.querySelector('main.cv');
-  if (!main) return [{ at: 'page', msg: 'The canvas didn\\'t draw.' }];
   if (de.scrollWidth > de.clientWidth + 1) out.push({ at: 'page', msg: 'The page scrolls sideways by ' + (de.scrollWidth - de.clientWidth) + 'px.' });
+  // A page that isn't a canvas (a tool of its own) is held to the page-wide rules only.
+  if (!main) return document.getElementById('canvas') ? [{ at: 'page', msg: 'The canvas didn\\'t draw.' }] : out;
   const seen = (el) => el.checkVisibility ? el.checkVisibility({ opacityProperty: true, visibilityProperty: true }) : !!el.offsetParent;
   const short = (s) => { s = s.replace(/\\s+/g, ' ').trim(); return s.length > 40 ? s.slice(0, 38) + '…' : s; };
   const hit = (a, b, t) => Math.min(a.right, b.right) - Math.max(a.left, b.left) > t && Math.min(a.bottom, b.bottom) - Math.max(a.top, b.top) > t;

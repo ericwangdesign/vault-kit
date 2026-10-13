@@ -10,6 +10,8 @@ Two skills live in `app/skills/`. Read the whole SKILL.md before doing either jo
 - **"make it a canvas", "write it up", or an answer with a clear shape** (a change, a choice, a flow, numbers, a plan):
   follow `app/skills/writing-canvas/SKILL.md` and its `reference.md`. Pages go in `<vault>/pages/`. Run the checker
   before calling a page done.
+  Pages are things to use: reach for a `live` piece pretty often, and read `<vault>/pages/_state/` when the owner
+  says what they picked.
 
 Rules that matter most:
 
