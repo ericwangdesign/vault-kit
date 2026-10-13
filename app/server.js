@@ -19,7 +19,7 @@ import { capturePage, CAPTURE_MANIFEST, CAPTURE_SW } from './capture.js';
 const FAVICON = readFileSync(new URL('./favicon.png', import.meta.url));
 import { propsPanel, PROPS_JS } from './props.js';
 import { todayData, readSorted } from './today.js';
-import { allPages, homelessPages, pageFile, PAGE_TYPES } from './pages.js';
+import { allPages, homelessPages, pagesOf, pageFile, PAGE_TYPES } from './pages.js';
 import { viewPage } from './view.js';
 // The browser's side of every page, and of Today. Plain files, so they can be read as code.
 const SHELL_JS = readFileSync(new URL('./shell-client.js', import.meta.url), 'utf8');
@@ -1070,6 +1070,8 @@ const SHELF = { projects: 'projects', clients: 'clients', ideas: 'ideas', catego
 function notePage(n, notes) {
   const known = new Set(notes.map((x) => x.name));
   const back = backlinks(n.name, notes);
+  // Every page this note links, listed where you can see it: a link in folded writing alone isn't a way in.
+  const pages = block('Pages', pagesOf(n, notes), (p) => row(p, { sub: p.description, meta: when(p.updated), archivable: false }));
   const [mine] = splitForClaude(n.body);
   const shelf = SHELF[section(n)];
   const crumbs = [];
@@ -1118,6 +1120,7 @@ function notePage(n, notes) {
     </div>
     ${folds(mine).map(([name, md]) => `<details class="doc-notes"><summary>${esc(name)}</summary><div class="prose">${render(md, known)}</div></details>`).join('')}
     <div class="doc-links">
+      ${pages}
       ${block('Linked from', back, (b) => row(b, { sub: b.description, meta: when(b.updated), archivable: false }))}
       ${folderLinks(n, notes)}
     </div>
@@ -1133,6 +1136,7 @@ function notePage(n, notes) {
     ${media(n, notes)}
     <div class="prose">${render(mine, known)}</div>
     <div class="doc-links">
+      ${pages}
       ${block('Linked from', back, (b) => row(b, { sub: b.description, meta: when(b.updated), archivable: false }))}
       ${folderLinks(n, notes)}
     </div>
