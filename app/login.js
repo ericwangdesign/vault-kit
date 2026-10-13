@@ -11,22 +11,22 @@ export function loginPage({ denied = false } = {}) {
   <meta charset="utf-8">
   <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
   <meta name="robots" content="noindex,nofollow">
-  <meta name="theme-color" content="#0b0b0b">
+  <meta name="theme-color" content="#080808">
   <title>Vault · Sign in</title>
   <link rel="icon" href="/favicon.svg" type="image/svg+xml">
   <link rel="stylesheet" href="/fonts/geist.css">
-<script>(function(){var c=(document.cookie.match(/(?:^|; )theme=(light|dark)/)||[])[1];if(!c){try{c=localStorage.getItem('theme')}catch(e){}}if(c==='light'){document.documentElement.dataset.mode='light';document.querySelector('meta[name=theme-color]').content='#ebebeb'}})();</script>
+<script>(function(){var c=(document.cookie.match(/(?:^|; )theme=(light|dark)/)||[])[1];if(!c){try{c=localStorage.getItem('theme')}catch(e){}}if(c==='light'){document.documentElement.dataset.mode='light';document.querySelector('meta[name=theme-color]').content='#f3f3f3';var i=document.querySelector('link[rel=icon]');if(i)i.href='/favicon-light.svg'}})();</script>
   <style>${TOKENS}
     html, body { min-height: 100%; background: var(--panel); }
     main { min-height: 100svh; display: flex; flex-direction: column; align-items: center; padding: 20px 16px max(20px, env(safe-area-inset-bottom)); }
-    header, footer { width: min(100%, 400px); display: flex; align-items: center; justify-content: space-between; font-size: 13px; color: var(--text-3); }
+    header, footer { width: min(100%, 400px); display: flex; align-items: center; justify-content: space-between; font-size: 14px; color: var(--text-3); }
     header .brand { display: flex; align-items: center; gap: 9px; color: var(--text); font-weight: 500; font-size: 14px; }
     header .brand img { width: 22px; height: 22px; border-radius: 6px; }
     footer { margin-top: auto; padding-top: 48px; }
     footer a:hover { color: var(--text); }
     .panel { width: min(100%, 400px); margin-top: 14vh; padding: 28px 24px 22px; background: var(--surface); border-radius: 18px; box-shadow: var(--shadow-lg); }
-    .eyebrow { font-size: 12.5px; color: var(--text-3); margin-bottom: 8px; }
-    h1 { margin: 0; font-size: 22px; line-height: 28px; font-weight: 500; letter-spacing: -0.022em; }
+    .eyebrow { font-size: 13px; color: var(--text-3); margin-bottom: 8px; }
+    h1 { margin: 0; font-size: 24px; line-height: 30px; font-weight: 500; letter-spacing: -0.022em; }
     .intro { margin-top: 8px; color: var(--text-2); line-height: 1.5; }
     #signin, #denied { margin-top: 24px; }
     button, input { font: inherit; color: inherit; letter-spacing: inherit; }
@@ -35,17 +35,17 @@ export function loginPage({ denied = false } = {}) {
     .google:hover, .secondary:hover { background: var(--hover-2); }
     .g { width: 18px; height: 18px; }
     .arrow { display: none; }
-    .divider { display: flex; align-items: center; gap: 12px; margin: 20px 0 16px; font-size: 12.5px; color: var(--text-3); }
+    .divider { display: flex; align-items: center; gap: 12px; margin: 20px 0 16px; font-size: 13px; color: var(--text-3); }
     .divider::before, .divider::after { content: ""; flex: 1; height: 1px; background: var(--line); }
     .field { display: flex; flex-direction: column; gap: 8px; }
-    .field label { font-size: 13px; color: var(--text-2); }
+    .field label { font-size: 14px; color: var(--text-2); }
     .field input { height: 44px; padding: 0 14px; border-radius: 12px; border: 0; background: var(--hover-2); outline: 0; font-size: 16px; }
     .field input:focus { box-shadow: inset 0 0 0 1px var(--text-3); }
     .field input::placeholder { color: var(--text-3); }
     .submit { height: 44px; border: 0; border-radius: 999px; background: var(--btn); color: var(--btn-text); font-weight: 500; transition: opacity .15s; }
     .submit:hover { opacity: .88; }
     .code { font-variant-numeric: tabular-nums; letter-spacing: .3em; }
-    .message { min-height: 18px; margin: 12px 2px 0; font-size: 13px; color: var(--text-3); }
+    .message { min-height: 18px; margin: 12px 2px 0; font-size: 14px; color: var(--text-3); }
     .message.error { color: var(--accent); }
     .hidden { display: none !important; }
     .denied { padding: 12px 14px; margin-bottom: 12px; border-radius: 12px; background: var(--hover); color: var(--text-2); line-height: 1.45; }

@@ -32,8 +32,8 @@ export const INTAKE_CSS = `
 }
 .intake textarea::placeholder { color: var(--text-3); }
 .intake-row { display: flex; align-items: center; gap: 10px; margin-top: 8px; }
-.intake-state { flex: 1; min-width: 0; font-size: 12.5px; color: var(--text-3); }
-.intake-keys kbd { font-size: 12px; }
+.intake-state { flex: 1; min-width: 0; font-size: 13px; color: var(--text-3); }
+.intake-keys kbd { font-size: 13px; }
 /* Touch screens have no ⌘I, so they get a round + in the corner instead. */
 .intake-fab { display: none; }
 @media (hover: none), (max-width: 759px) {

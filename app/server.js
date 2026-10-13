@@ -8,7 +8,7 @@ import { CSS, PAGE_CSS } from './style.js';
 import { SETTINGS_JS, SETTINGS_PANEL, BOOT_JS } from './settings.js';
 import { writeCutting, binCutting, setCuttingFolder, analyzeFolder, analysisState } from './cuttings.js';
 import { setArchived } from './archive.js';
-import { readTodos, setTodo, addTodo, removeTodo } from './todo.js';
+import { readTodos, setTodo, addTodo, removeTodo, moveTodo, startFresh, lineOfText } from './todo.js';
 import { api, readInbox, hooks } from './api.js';
 import { dotSvg, FAVICON_LINK } from './favicon.js';
 import { schedule as scheduleSort, startSorter } from './sorter.js';
@@ -19,6 +19,7 @@ import { capturePage, CAPTURE_MANIFEST, CAPTURE_SW } from './capture.js';
 const FAVICON = readFileSync(new URL('./favicon.png', import.meta.url));
 import { propsPanel, PROPS_JS } from './props.js';
 import { todayData, readSorted } from './today.js';
+import { allPages, homelessPages, pageFile } from './pages.js';
 import { viewPage } from './view.js';
 // The browser's side of every page, and of Today. Plain files, so they can be read as code.
 const SHELL_JS = readFileSync(new URL('./shell-client.js', import.meta.url), 'utf8');
@@ -27,10 +28,11 @@ const TODAY_JS = readFileSync(new URL('./today-client.js', import.meta.url), 'ut
 const PORT = process.env.PORT || 4700;
 // fileURLToPath, not .pathname — this project's path contains a space, which .pathname percent-encodes
 const FONT_DIR = fileURLToPath(new URL('./fonts/', import.meta.url));
+const CANVAS_DIR = fileURLToPath(new URL('./canvas/', import.meta.url));
 const LOOK_DIR = fileURLToPath(new URL('./look/', import.meta.url));
 
 const HORIZON = { short: 'short-term', long: 'long-term', ongoing: 'ongoing' };
-const KIND = { project: 'project', client: 'client', idea: 'idea', resource: 'resource', thought: 'thought', decision: 'decision', reference: 'reference', user: 'about', feedback: 'about', cutting: 'cutting', 'style-guide': 'style guide', journal: 'day', category: 'category', part: 'part' };
+const KIND = { project: 'project', client: 'client', idea: 'idea', resource: 'resource', thought: 'thought', decision: 'decision', reference: 'reference', user: 'about me', feedback: 'about me', trip: 'trip', personal: 'personal', cutting: 'cutting', 'style-guide': 'style guide', journal: 'day', category: 'category', part: 'part' };
 
 const long = (d) => d ? new Date(d + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' }) : '';
 const dm = (d) => d ? d.slice(8, 10) + '/' + d.slice(5, 7) : '';
@@ -55,7 +57,7 @@ export const THEME_JS = `
   function saveTheme(m){try{localStorage.setItem('theme',m)}catch(e){}var d='';document.cookie='theme='+m+d+';path=/;max-age=31536000;samesite=lax'}
   var paint = function (mode) {
     root.dataset.mode = mode;
-    var m = document.querySelector('meta[name=theme-color]'); if (m) m.content = mode === 'light' ? '#f5f5f5' : '#0f0f0f';
+    var m = document.querySelector('meta[name=theme-color]'); if (m) m.content = mode === 'light' ? '#ffffff' : '#0f0f0f';
     var i = document.querySelector('link[rel=icon]'); if (i) i.href = mode === 'light' ? '/favicon-light.svg' : '/favicon.svg';
   };
   var c=(document.cookie.match(/(?:^|; )theme=(light|dark)/)||[])[1];if(!c){try{c=localStorage.getItem('theme')}catch(e){}}
@@ -103,7 +105,18 @@ document.addEventListener('DOMContentLoaded', function () {
       else if (top + 46 > nav.scrollTop + room) nav.scrollTop = top + 46 - room;
     }
   };
-  addEventListener('scroll', mark, { passive: true }); addEventListener('resize', mark); mark();
+  // The rail is fixed to the window's right edge, so a narrow window or a wide column puts it on top of
+  // the text. It only shows when it clears the column's right edge.
+  var col = frame.querySelector('.prose') || frame;
+  var fit = function () {
+    nav.classList.remove('nofit');
+    if (getComputedStyle(nav).display === 'none') return;
+    nav.classList.toggle('nofit', nav.getBoundingClientRect().left < col.getBoundingClientRect().right + 32);
+  };
+  addEventListener('scroll', mark, { passive: true }); addEventListener('resize', function () { fit(); mark(); }); fit(); mark();
+  if (document.fonts) document.fonts.ready.then(fit);
+  addEventListener('animationend', fit);  // the page's rise moves the rail while it plays
+  new MutationObserver(fit).observe(document.documentElement, { attributes: true, attributeFilter: ['style'] });
 });
 `;
 
@@ -120,7 +133,7 @@ const ICON = {
   resources: '<path d="m19 21-7-4-7 4V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2v16z"/>',
   clients: '<rect width="20" height="14" x="2" y="6" rx="2"/><path d="M16 20V4a2 2 0 0 0-2-2h-4a2 2 0 0 0-2 2v16"/>',
   cuttings: '<circle cx="6" cy="6" r="3"/><circle cx="6" cy="18" r="3"/><path d="M8.1 8.1 12 12M20 4 8.1 15.9M14.8 14.8 20 20"/>',
-  about: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
+  personal: '<circle cx="12" cy="8" r="4"/><path d="M4 21a8 8 0 0 1 16 0"/>',
   search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
   menu: '<path d="M4 7h16M4 12h10M4 17h16"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
@@ -138,7 +151,7 @@ const NAV = [
   ['today', 'Today', '/'], ['inbox', 'Inbox', '/inbox'], ['todo', 'To do', '/todo'],
   ['projects', 'Projects', '/projects'], ['ideas', 'Ideas', '/ideas'], ['thinking', 'Thinking', '/thinking'],
   ['resources', 'Resources', '/resources'], ['clients', 'Clients', '/clients'], ['cuttings', 'Cuttings', '/cuttings'],
-  ['about', 'About', '/about'],
+  ['personal', 'Personal', '/personal'],
 ];
 const TITLE = Object.fromEntries(NAV.map(([k, t]) => [k, t]));
 
@@ -149,8 +162,8 @@ function navCounts(notes) {
   const on = (s) => live.filter((n) => section(n) === s);
   const t = readTodos();
   return {
-    inbox: readInbox().length || '',
-    todo: t ? t.items.filter((i) => !i.done).length : '',
+    inbox: (readInbox().length + homelessPages(notes).length) || '',
+    todo: t ? t.items.filter((i) => !i.done && i.tier === 'today').length || '' : '',
     projects: on('projects').filter((n) => n.status === 'active').length,
     ideas: on('ideas').length, thinking: on('thinking').length, resources: on('resources').length,
     clients: on('clients').filter((n) => n.status !== 'past').length, cuttings: on('cuttings').length,
@@ -170,9 +183,7 @@ function sidebar(notes, here, base) {
     <nav class="nav">
       ${NAV.slice(0, 3).map(item).join('')}
       <div class="nav-label">Library</div>
-      ${NAV.slice(3, 9).map(item).join('')}
-      <div class="nav-label">Always true</div>
-      ${NAV.slice(9).map(item).join('')}
+      ${NAV.slice(3).map(item).join('')}
     </nav>
     <div class="side-foot">
       <span class="clock" id="clock"></span>
@@ -304,29 +315,129 @@ const todoText = (raw) => esc(raw.replace(/\s*\[\[[^\]]+\]\]/g, '')).replace(
   /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)|(https?:\/\/[^\s<]+)/g,
   (_m, label, url, bare) => `<a href="${url || bare}" target="_blank" rel="noopener">${label || bare.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}</a>`);
 
+// The list in the order a day uses it: what's picked for today, then what to reach for if
+// there's time, then what came in and needs a place, then everything kept for later.
+// Every button works in place (TODO_JS): rows move between sections without a reload.
+const TIER_ACTS = { today: ['time', 'later'], time: ['today', 'later'], new: ['today', 'time', 'later'], later: ['today', 'time'] };
+const TIER_BTN = { today: 'Today', time: 'If time', later: 'Later' };
+const todoActs = (tier, done) => `<span class="todo-acts${done ? ' solo' : ''}">${done ? '' : TIER_ACTS[tier].map((k) =>
+  `<button type="button" data-move="${k}"${k === 'today' ? ' class="go"' : ''}>${TIER_BTN[k]}</button>`).join('')}<button class="todo-rm" type="button" aria-label="Delete">${svg('x')}</button></span>`;
 function todoPage(notes) {
   const t = readTodos();
   const items = t ? t.items : [];
+  const fresh = !!t?.fresh;
   const open = items.filter((i) => !i.done);
-  const done = items.filter((i) => i.done);
-  const item = (i) => {
-    const link = /\[\[([^\]|]+)(?:\|[^\]]*)?\]\]/.exec(i.text);
-    return `<li><div class="todo${i.done ? ' done' : ''}" data-line="${i.line}" role="checkbox" aria-checked="${i.done}" tabindex="0">
-      <span class="check">${svg('check')}</span><span class="tx">${todoText(i.text)}</span>
-      <button class="todo-rm" type="button" data-line="${i.line}" aria-label="Delete">${svg('x')}</button>
+  const of = (k) => open.filter((i) => i.tier === k);
+  const today = of('today');
+  // Today keeps what got ticked today, struck through; older ticks go to Done.
+  const todayDone = fresh ? items.filter((i) => i.done && i.tier === 'today') : [];
+  const done = items.filter((i) => i.done && !todayDone.includes(i));
+  const item = (i, tier) => `<li data-text="${esc(i.text)}"><div class="todo${i.done ? ' done' : ''}" role="checkbox" aria-checked="${i.done}" tabindex="0">
+      <span class="check">${svg('check')}</span><span class="tx">${todoText(i.text)}</span>${todoActs(tier, i.done)}
     </div></li>`;
-  };
+  const list = (arr, tier) => `<ul class="rows">${arr.map((i) => item(i, tier)).join('')}</ul>`;
+  const empty = (b, s) => `<div class="empty"><b>${b}</b><span>${s}</span></div>`;
+  const stale = !fresh && today.length && t.picked;
+  const picked = stale ? new Date(t.picked + 'T12:00:00').toLocaleDateString('en-US', { month: 'short', day: 'numeric' }) : '';
+  const fold = (tier, label, arr) => `<details class="block" data-tier="${tier}"${arr.length ? '' : ' hidden'}><summary>${blockHead(label, arr.length)}</summary><div class="card">${list(arr, tier)}</div></details>`;
   const body = `
-  ${pageHead({ title: 'To do', sub: open.length ? plural(open.length, 'thing') + ' open' : 'Nothing open' })}
-  <section class="block" style="margin-top:28px">
+  ${pageHead({ title: 'To do', sub: ' ' })}
+  <section class="block" data-tier="today" style="margin-top:28px">
+    ${blockHead('Today', today.length, stale ? `<p class="end todo-fresh">Picked ${picked}<button type="button" id="todoFresh">Start fresh</button></p>` : '')}
     <div class="card">
-      <form class="todo-add"><span class="plus">${svg('plus')}</span><input type="text" placeholder="Add a to-do" autocomplete="off" spellcheck="false" enterkeyhint="done" aria-label="Add a to-do"></form>
-      ${open.length ? `<ul class="rows">${open.map(item).join('')}</ul>` : '<div class="empty"><b>Nothing open.</b><span>Anything you capture that sounds like a to-do lands here too.</span></div>'}
+      <form class="todo-add"><span class="plus">${svg('plus')}</span><input type="text" placeholder="Add something for today" autocomplete="off" spellcheck="false" enterkeyhint="done" aria-label="Add a to-do"></form>
+      ${list(today.concat(todayDone), 'today')}
+      ${empty('Nothing picked yet.', 'Tap Today on anything below. The rest stays where it is.')}
     </div>
   </section>
-  ${done.length ? `<details class="block"><summary>${blockHead('Done', done.length)}</summary><div class="card"><ul class="rows">${done.map(item).join('')}</ul></div></details>` : ''}`;
+  <section class="block" data-tier="new"${of('new').length ? '' : ' hidden'}>${blockHead('To sort', of('new').length, '<span class="end">Just came in</span>')}<div class="card">${list(of('new'), 'new')}</div></section>
+  <section class="block" data-tier="time">${blockHead('If there’s time', of('time').length)}
+    <div class="card">${list(of('time'), 'time')}${empty('Nothing waiting.', 'Send things here when they’re next in line.')}</div>
+  </section>
+  ${fold('later', 'Later', of('later'))}
+  ${fold('done', 'Done', done)}
+  <script>${TODO_JS}</script>`;
   return shell('To do · Vault', body, { notes, here: 'todo' });
 }
+const TODO_JS = `(function () {
+  var ACTS = ${JSON.stringify(TIER_ACTS)}, BTN = ${JSON.stringify(TIER_BTN)};
+  var X = ${JSON.stringify(svg('x'))}, CHECK = ${JSON.stringify(svg('check'))};
+  var send = function (body) { return fetch('/todo/item', { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify(body) }).then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); }); };
+  var esc = function (s) { return String(s).replace(/[&<>"']/g, function (c) { return { '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' }[c]; }); };
+  var sec = function (k) { return document.querySelector('[data-tier="' + k + '"]'); };
+  var acts = function (tier, done) {
+    return '<span class="todo-acts' + (done ? ' solo' : '') + '">' + (done ? '' : ACTS[tier].map(function (k) {
+      return '<button type="button" data-move="' + k + '"' + (k === 'today' ? ' class="go"' : '') + '>' + BTN[k] + '</button>'; }).join('')) +
+      '<button class="todo-rm" type="button" aria-label="Delete">' + X + '</button></span>';
+  };
+  // Counts, empty states and the line under the title follow the rows as they move.
+  function recount() {
+    var n = {};
+    ['today', 'new', 'time', 'later', 'done'].forEach(function (k) {
+      var s = sec(k), rows = s.querySelectorAll('li'), open = s.querySelectorAll('.todo:not(.done)').length;
+      n[k] = k === 'done' ? rows.length : open;
+      var c = s.querySelector('.block-head .n'); if (c) c.textContent = n[k];
+      var e = s.querySelector('.empty'); if (e) e.hidden = rows.length > 0;
+      if (k === 'new' || k === 'later' || k === 'done') s.hidden = !rows.length;
+    });
+    var parts = [n.today ? n.today + ' for today' : 'Nothing picked for today', n.time && n.time + ' if there’s time', n['new'] && n['new'] + ' to sort', n.later && n.later + ' later'];
+    document.querySelector('.page-head .sub').textContent = parts.filter(Boolean).join(' · ');
+    var nav = document.querySelector('.side a[href$="/todo"]');
+    if (nav) { var b = nav.querySelector('.n'); if (!b && n.today) { b = document.createElement('span'); b.className = 'n'; nav.append(b); } if (b) b.textContent = n.today || ''; }
+  }
+  // Slide out, move, slide in. The write happens first; if it fails the row stays put.
+  function place(li, tier, top) {
+    var ul = sec(tier).querySelector('ul');
+    li.classList.add('leaving');
+    setTimeout(function () {
+      var done = li.querySelector('.todo').classList.contains('done');
+      li.querySelector('.todo-acts').outerHTML = acts(tier, done);
+      top ? ul.prepend(li) : ul.append(li);
+      li.classList.remove('leaving');
+      recount();
+    }, 160);
+  }
+  var main = document.querySelector('.main') || document;
+  main.addEventListener('click', function (e) {
+    var li = e.target.closest('li[data-text]'); if (!li) return;
+    var row = li.querySelector('.todo'), text = li.dataset.text;
+    if (e.target.closest('a')) return;
+    var mv = e.target.closest('[data-move]'), rm = e.target.closest('.todo-rm');
+    if (li.busy) return;
+    if (mv) { li.busy = true; send({ text: text, move: mv.dataset.move }).then(function () { place(li, mv.dataset.move); }).catch(function () {}).then(function () { li.busy = false; }); return; }
+    if (rm) { li.busy = true; li.classList.add('leaving'); send({ text: text, remove: true }).then(function () { setTimeout(function () { li.remove(); recount(); }, 160); }).catch(function () { li.classList.remove('leaving'); li.busy = false; }); return; }
+    if (e.target.closest('button')) return;
+    var done = !row.classList.contains('done');
+    li.busy = true; row.classList.toggle('done', done); row.setAttribute('aria-checked', done); recount();
+    send({ text: text, done: done }).catch(function () { row.classList.toggle('done', !done); row.setAttribute('aria-checked', !done); recount(); }).then(function () { li.busy = false; });
+  });
+  main.addEventListener('keydown', function (e) {
+    if ((e.key === ' ' || e.key === 'Enter') && e.target.classList && e.target.classList.contains('todo')) { e.preventDefault(); e.target.click(); }
+  });
+  var form = document.querySelector('form.todo-add');
+  form.addEventListener('submit', function (e) {
+    e.preventDefault();
+    var input = form.querySelector('input'), text = input.value.trim();
+    if (!text) return;
+    input.value = '';
+    send({ add: text, move: 'today' }).then(function (r) {
+      var li = document.createElement('li'); li.dataset.text = r.text;
+      li.innerHTML = '<div class="todo" role="checkbox" aria-checked="false" tabindex="0"><span class="check">' + CHECK + '</span><span class="tx">' + esc(r.text) + '</span>' + acts('today', false) + '</div>';
+      sec('today').querySelector('ul').append(li); recount();
+    }).catch(function () { input.value = text; });
+  });
+  var fresh = document.getElementById('todoFresh');
+  if (fresh) fresh.addEventListener('click', function () {
+    fresh.disabled = true;
+    fetch('/todo/fresh', { method: 'POST', headers: { 'content-type': 'application/json' }, body: '{}' }).then(function (r) {
+      if (!r.ok) throw 0;
+      var rows = [].slice.call(sec('today').querySelectorAll('li'));
+      rows.reverse().forEach(function (li) { place(li, li.querySelector('.todo').classList.contains('done') ? 'done' : 'time', true); });
+      fresh.closest('.todo-fresh').remove();
+    }).catch(function () { fresh.disabled = false; });
+  });
+  recount();
+})();`;
 
 /* ---------- Inbox: the receipt ---------- */
 // What came in, and where the sort put it. The sort is meant to be invisible; this is where a
@@ -361,9 +472,11 @@ function receiptBody(notes) {
 }
 function inboxPage(notes) {
   const r = landRows(notes);
+  const homeless = homelessPages(notes);
   const body = `
   ${pageHead({ title: 'Inbox', sub: r.count ? `${plural(r.count, 'capture')} waiting to be sorted` : 'All sorted', lede: 'Everything you’ve captured, and where it went.' })}
   <div style="margin-top:28px"></div>
+  ${homeless.length ? block('Pages with no note', homeless, (p) => row(p, { sub: 'Link it from the note it belongs to', meta: when(p.updated), archivable: false })) : ''}
   ${r.waiting ? `<section class="block">${blockHead('Waiting', r.count, '<span class="end">Sorted in a couple of minutes</span>')}<div class="card">${r.waiting}</div></section>` : ''}
   <section class="block">${blockHead('Sorted', '', '<span class="end">Newest first</span>')}${r.sorted ? `<div class="card">${r.sorted}</div>` : emptyCard('Nothing has come in yet.', '⌘I, or the + on your phone, and say anything.')}</section>`;
   return shell('Inbox · Vault', body, { notes, here: 'inbox' });
@@ -429,7 +542,10 @@ function projectsPage(notes) {
   const clients = all.filter((n) => n.client).sort(byUpdated);
   // The ones with something to look at lead; the rest follow, newest first in each.
   const seen = (n) => coverOf(n) || previewable(n.live || n.page) ? 0 : 1;
-  const open = projects.filter((n) => n.status === 'active' || !n.status).sort((a, b) => seen(a) - seen(b) || byUpdated(a, b));
+  // Always on: the tools my own system runs on (horizon: ongoing). They never finish, so they sit apart from Open.
+  const active = projects.filter((n) => n.status === 'active' || !n.status);
+  const open = active.filter((n) => n.horizon !== 'ongoing').sort((a, b) => seen(a) - seen(b) || byUpdated(a, b));
+  const always = active.filter((n) => n.horizon === 'ongoing').sort((a, b) => seen(a) - seen(b) || byUpdated(a, b));
   const parked = projects.filter((n) => n.status === 'paused' || n.status === 'idea').sort(byUpdated);
   const done = projects.filter((n) => n.status === 'shipped' || n.status === 'dead' || n.status === 'done').sort(byUpdated);
   const filed = notes.filter((n) => n.archived && section(n) === 'projects').sort(byUpdated);
@@ -437,9 +553,10 @@ function projectsPage(notes) {
   ${pageHead({ title: 'Projects', sub: `${plural(open.length, 'project')} open${done.length ? ` · ${done.length} shipped` : ''}` })}
   <div style="margin-top:28px"></div>
   ${grid('Open', open)}
-  ${grid('Shipped', done)}
-  ${grid('Client work', clients)}
-  ${grid('Parked', parked)}
+  ${grid('Always on', always, { fold: true })}
+  ${grid('Shipped', done, { fold: true })}
+  ${grid('Client work', clients, { fold: true })}
+  ${grid('Parked', parked, { fold: true })}
   ${grid('Archive', filed, { fold: true })}
   ${all.length ? '' : emptyCard('No projects yet.', 'When an idea gets picked up it becomes a project.')}`;
   return shell('Projects · Vault', body, { notes, here: 'projects' });
@@ -515,7 +632,7 @@ const IDEAS_JS = `(function () {
 })();`;
 
 // Thinking folds by subject, not by year: each one shows its five newest, the rest a click away.
-const THINKING = [['loose', 'Loose thoughts'], ['craft', 'Craft'], ['career', 'Where I’m headed'], ['personal', 'Personal'], ['weeks', 'Weeks']];
+const THINKING = [['loose', 'Loose thoughts'], ['craft', 'Craft'], ['career', 'Where I’m headed'], ['weeks', 'Weeks']];
 const THINK_KEYS = new Set(THINKING.map(([k]) => k));
 const thinkingCat = (n) => THINK_KEYS.has(n.category) ? n.category : (n.tags.includes('review') ? 'weeks' : 'loose');
 const THINK_PEEK = 5;
@@ -591,14 +708,24 @@ function clientsPage(notes) {
   return shell('Clients · Vault', body, { notes, here: 'clients' });
 }
 
-function aboutPage(notes) {
-  const about = live(notes, 'about').sort((a, b) => (a.created || '').localeCompare(b.created || ''));
+// Personal: everything outside work. Who I am, trips, people and the rest of life. Every trip
+// stays here as the record of where I went, archived or not; a finished one (status: done) greys out.
+const PERSONAL = [['user', 'About me'], ['feedback', 'About me'], ['trip', 'Trips'], ['personal', 'Life']];
+function personalPage(notes) {
+  const mine = notes.filter((n) => section(n) === 'personal');
+  const group = (label) => mine.filter((n) => PERSONAL.some(([t, l]) => l === label && t === n.type) && (n.type === 'trip' || !n.archived));
+  const about = group('About me').sort((a, b) => (a.created || '').localeCompare(b.created || ''));
+  const trips = group('Trips').sort((a, b) => (b.created || '').localeCompare(a.created || ''));
+  const life = group('Life').sort(byUpdated);
+  const r = (n) => row(n, { sub: n.description, meta: when(n.updated), dim: n.type === 'trip' && n.status === 'done', archivable: false });
   const body = `
-  ${pageHead({ title: 'About', sub: 'What stays true from one session to the next' })}
+  ${pageHead({ title: 'Personal', sub: 'Everything outside work' })}
   <div style="margin-top:28px"></div>
-  ${block('Always true', about, (n) => row(n, { sub: n.description, meta: when(n.updated), archivable: false }))}
-  ${about.length ? '' : emptyCard('Nothing written down yet.', 'Preferences and ways of working land here.')}`;
-  return shell('About · Vault', body, { notes, here: 'about' });
+  ${block('About me', about, r)}
+  ${block('Trips', trips, r)}
+  ${block('Life', life, r)}
+  ${mine.length ? '' : emptyCard('Nothing personal yet.', 'Trips, people, the things outside work.')}`;
+  return shell('Personal · Vault', body, { notes, here: 'personal' });
 }
 
 /* ---------- gallery ---------- */
@@ -906,7 +1033,7 @@ function folderLinks(n, notes) {
 }
 
 // Where a note sits, for the crumbs above its title.
-const SHELF = { projects: 'projects', clients: 'clients', ideas: 'ideas', category: 'ideas', resources: 'resources', cuttings: 'cuttings', thinking: 'thinking', about: 'about', todo: 'todo', inbox: 'inbox' };
+const SHELF = { projects: 'projects', clients: 'clients', ideas: 'ideas', category: 'ideas', resources: 'resources', cuttings: 'cuttings', thinking: 'thinking', personal: 'personal', todo: 'todo', inbox: 'inbox' };
 
 function notePage(n, notes) {
   const known = new Set(notes.map((x) => x.name));
@@ -932,7 +1059,7 @@ function notePage(n, notes) {
   const isProject = section(n) === 'projects';
   const props = propsPanel(n, sub).replace('id="propsSub"', `id="propsSub" data-kind="${esc(KIND[n.type] || n.type)}"`);
   const paths = n.path || n.repo || n.source ? `<div class="paths">
-        ${n.path ? `<span class="mono${n.pathExists ? '' : ' missing'}">${esc(n.path)}${n.pathExists ? '' : ' · not found on disk'}</span>` : ''}
+        ${n.path ? `<span class="mono${n.pathExists === false ? ' missing' : ''}">${esc(n.path)}${n.pathExists === false ? ' · not found on disk' : ''}</span>` : ''}
         ${n.repo ? `<a href="${esc(n.repo)}" target="_blank" rel="noopener">${esc(n.repo.replace(/^https?:\/\//, ''))} ↗</a>` : ''}
         ${n.source ? `<a href="${esc(n.source)}" target="_blank" rel="noopener">${esc(n.site || n.source)} ↗</a>` : ''}
       </div>` : '';
@@ -943,6 +1070,10 @@ function notePage(n, notes) {
         ${n.studio && n.studio !== openOf(n) ? `<a class="btn ghost" href="${esc(n.studio)}" target="_blank" rel="noopener">Studio ↗</a>` : ''}
       </div>` : '';
 
+  // A project's words, folded. `<!-- fold Manual -->` on its own line starts another fold under that name, so a
+  // project can carry its manual on its own page: Notes, then Manual.
+  const folds = (md) => md.split(/^<!-- fold (.+?) -->[ \t]*$/m).reduce((out, part, i, all) =>
+    i % 2 ? out : (i === 0 ? (part.trim() ? [['Notes', part]] : []) : [...out, [all[i - 1].trim(), part]]), []);
   // A project leads with the work: title, a way in, the thing itself. The words come after, folded.
   const body = isProject ? `
   <article class="doc doc-project">
@@ -953,7 +1084,7 @@ function notePage(n, notes) {
       ${props}
       ${paths}
     </div>
-    ${mine.trim() ? `<details class="doc-notes"><summary>Notes</summary><div class="prose">${render(mine, known)}</div></details>` : ''}
+    ${folds(mine).map(([name, md]) => `<details class="doc-notes"><summary>${esc(name)}</summary><div class="prose">${render(md, known)}</div></details>`).join('')}
     <div class="doc-links">
       ${block('Linked from', back, (b) => row(b, { sub: b.description, meta: when(b.updated), archivable: false }))}
       ${folderLinks(n, notes)}
@@ -1124,13 +1255,23 @@ async function handle(req, res) {
     res.end(THEME_JS);
     return;
   }
+  // The writing canvas: a /pages/ piece written as data, drawn by these two files (canvas/).
+  if (url.pathname === '/canvas.css' || url.pathname === '/canvas.js') {
+    const css = url.pathname.endsWith('.css');
+    res.writeHead(200, { 'content-type': css ? 'text/css; charset=utf-8' : 'text/javascript; charset=utf-8', 'cache-control': 'no-store' });
+    res.end(readFileSync(join(CANVAS_DIR, css ? 'canvas.css' : 'canvas.js')));
+    return;
+  }
 
   // Standalone HTML pieces (ex claude.ai artifacts) — whole pages, linked from their notes.
   // The Today prototype grew into the home page; its old address goes there.
   if (url.pathname === '/pages/dashboard.html') { res.writeHead(302, { location: '/' }).end(); return; }
+  // Pages had a shelf for an evening (Oct 12); About became Personal the same night.
+  if (url.pathname === '/pages' || url.pathname === '/pages/') { res.writeHead(302, { location: '/inbox' }).end(); return; }
+  if (url.pathname === '/about') { res.writeHead(301, { location: '/personal' }).end(); return; }
   if (url.pathname.startsWith('/pages/')) {
-    const file = join(VAULT, 'pages', decodeURIComponent(url.pathname.slice(7)).replace(/[^\w.-]/g, ''));
-    if (!existsSync(file) || statSync(file).isDirectory()) { res.writeHead(404).end(); return; }
+    const file = pageFile(url.pathname);
+    if (!file || !existsSync(file) || statSync(file).isDirectory()) { res.writeHead(404).end(); return; }
     res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' });
     res.end(readFileSync(file));
     return;
@@ -1210,31 +1351,37 @@ async function handle(req, res) {
     const index = notes.map((n) => ({
       n: n.name, t: n.title, d: n.description, k: KIND[n.type] || n.type,
       s: [n.title, n.description, n.tags.join(' '), n.body].join(' ').toLowerCase(),
-    }));
+    })).concat(allPages(notes).map((p) => ({ n: p.name, h: p.page, t: p.title, d: p.from[0] ? p.from[0].title : '', k: 'page', s: [p.title, p.text].join(' ').toLowerCase() })));
     res.writeHead(200, { 'content-type': 'application/json', 'cache-control': 'private, max-age=60' }).end(JSON.stringify(index));
     return;
   }
   if (url.pathname === '/receipt') { res.writeHead(200, { 'content-type': 'text/html; charset=utf-8', 'cache-control': 'no-store' }).end(receiptBody(notes)); return; }
   {
     const pages = { '/': todayPage, '/todo': todoPage, '/inbox': inboxPage, '/projects': projectsPage, '/ideas': ideasPage,
-      '/thinking': thinkingPage, '/resources': resourcesPage, '/clients': clientsPage, '/about': aboutPage };
+      '/thinking': thinkingPage, '/resources': resourcesPage, '/clients': clientsPage, '/personal': personalPage };
     const page = pages[url.pathname.replace(/(.)\/$/, '$1')];
     if (page && !/^cuttings?\./.test(req.headers.host || '')) return send(200, page(notes));
   }
   {
-    const m = /^\/todo\/(add|\d+)$/.exec(url.pathname);
+    const m = /^\/todo\/(add|fresh|item|\d+)$/.exec(url.pathname);
     if (m && req.method === 'POST') {
       const chunks = [];
       req.on('data', (c) => chunks.push(c));
       req.on('end', () => {
         try {
           const b = JSON.parse(Buffer.concat(chunks).toString('utf8') || '{}');
-          const out = m[1] === 'add' ? addTodo(b.text)
+          const out = m[1] === 'item' ? (b.add ? addTodo(b.add, b.move)
+              : b.remove ? removeTodo(lineOfText(b.text))
+              : b.move ? moveTodo(lineOfText(b.text), b.move)
+              : setTodo(lineOfText(b.text), !!b.done))
+            : m[1] === 'add' ? addTodo(b.text, b.tier)
+            : m[1] === 'fresh' ? startFresh()
             : b.remove ? removeTodo(+m[1])
+            : b.move ? moveTodo(+m[1], b.move, { top: !!b.top })
             : setTodo(+m[1], !!b.done);
           res.writeHead(200, { 'content-type': 'application/json' });
           res.end(JSON.stringify(out));
-        } catch (e) { res.writeHead(400, { 'content-type': 'text/plain' }); res.end(e.message); }
+        } catch (e) { res.writeHead(e.code === 409 ? 409 : 400, { 'content-type': 'text/plain' }); res.end(e.message); }
       });
       return;
     }

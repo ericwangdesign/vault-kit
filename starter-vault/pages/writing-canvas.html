@@ -1,0 +1,454 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<meta name="theme-color" content="#0f0f0f">
+<title>Writing in shapes</title>
+<link rel="icon" href="/favicon.svg" type="image/svg+xml">
+<link rel="stylesheet" href="/fonts/geist.css">
+<link rel="stylesheet" href="/vault.css">
+<link rel="stylesheet" href="/canvas.css">
+<script src="/vault.js"></script>
+</head>
+<body>
+<script type="application/json" id="canvas">
+{
+ "title": "Writing in shapes",
+ "kicker": [
+  "Project",
+  "Writing canvas"
+ ],
+ "dek": "Most answers I get are a shape squeezed into paragraphs: a before and after, a choice, a flow. So Claude writes pages in shapes, from one small system with twenty-two of them.",
+ "meta": [
+  "Oct 12, 2026",
+  "3 min read"
+ ],
+ "blocks": [
+  {
+   "type": "text",
+   "md": "Ask Claude why a design changed and you get five paragraphs. Read them closely and there's a before, an after, three reasons and one cost. The answer had a shape the whole time.\n\nThe canvas gives that shape somewhere to land. Claude writes the page as data, one small renderer in the vault draws it, and a checker holds it to the rules before anyone reads it."
+  },
+  {
+   "type": "quote",
+   "md": "If an answer has a shape, draw the shape. Words fill the gaps."
+  },
+  {
+   "type": "heading",
+   "text": "Twenty-two shapes, six jobs"
+  },
+  {
+   "type": "text",
+   "md": "Each shape answers one question people actually ask. They group by what they show."
+  },
+  {
+   "type": "tree",
+   "title": "Every shape answers one question, grouped by what it shows",
+   "root": {
+    "label": "The canvas",
+    "children": [
+     {
+      "label": "Change",
+      "children": [
+       {
+        "label": "Before and after",
+        "note": "What changed?"
+       }
+      ]
+     },
+     {
+      "label": "Choice",
+      "children": [
+       {
+        "label": "Compare",
+        "note": "Why this and not that?"
+       },
+       {
+        "label": "Variants",
+        "note": "What did we try?"
+       },
+       {
+        "label": "Tabs",
+        "note": "How does it look in each case?",
+        "mark": "new"
+       },
+       {
+        "label": "2×2",
+        "note": "Where does each sit?"
+       },
+       {
+        "label": "Decision",
+        "note": "What did we pick?"
+       }
+      ]
+     },
+     {
+      "label": "Structure",
+      "children": [
+       {
+        "label": "Tree",
+        "note": "Where does it live?"
+       },
+       {
+        "label": "Flow",
+        "note": "How does it behave?"
+       },
+       {
+        "label": "Anatomy",
+        "note": "What is it made of?"
+       },
+       {
+        "label": "Steps",
+        "note": "What happens, in order?"
+       },
+       {
+        "label": "Table",
+        "note": "The details of each?",
+        "mark": "new"
+       }
+      ]
+     },
+     {
+      "label": "Time",
+      "children": [
+       {
+        "label": "Timeline",
+        "note": "How did we get here?"
+       },
+       {
+        "label": "Gantt",
+        "note": "How long?"
+       },
+       {
+        "label": "Calendar",
+        "note": "Which day?"
+       },
+       {
+        "label": "Heatmap",
+        "note": "When, and how much?",
+        "mark": "new"
+       },
+       {
+        "label": "Checklist",
+        "note": "Where does it stand?",
+        "mark": "new"
+       }
+      ]
+     },
+     {
+      "label": "Amount",
+      "children": [
+       {
+        "label": "Stats",
+        "note": "How much?"
+       },
+       {
+        "label": "Charts",
+        "note": "Which, what share, which way?"
+       },
+       {
+        "label": "Treemap",
+        "note": "Made of what, by size?",
+        "mark": "new"
+       }
+      ]
+     },
+     {
+      "label": "Depth",
+      "children": [
+       {
+        "label": "Collapsible",
+        "note": "What's underneath?",
+        "mark": "new"
+       },
+       {
+        "label": "Sources",
+        "note": "Where did it come from?",
+        "mark": "new"
+       }
+      ]
+     }
+    ]
+   }
+  },
+  {
+   "type": "text",
+   "md": "Any picture in any of them can be a clip. Every one of them, drawn once: [Every shape](/pages/canvas-gallery.html)."
+  },
+  {
+   "type": "heading",
+   "text": "The same answer, twice"
+  },
+  {
+   "type": "text",
+   "md": "A real call from building this. First the way it would usually come back, then as a shape."
+  },
+  {
+   "type": "beforeAfter",
+   "before": {
+    "label": "Paragraphs",
+    "blocks": [
+     {
+      "type": "text",
+      "md": "We decided that Claude should write each page as data rather than as HTML. The main one is that the look then lives in a single renderer, so restyling it once changes every page, and Claude can't accidentally drift off-style since it never chooses colors or spacing itself. It also means the same data could later be drawn somewhere else, like inline in a chat or in Studio. The tradeoff is that pages can only use the six shapes that exist, and anything else has to be written as plain text, and adding a new shape means writing code. We also haven't figured out yet how people reading a page could reply to it."
+     }
+    ]
+   },
+   "after": {
+    "label": "Shape",
+    "blocks": [
+     {
+      "type": "decision",
+      "chose": "Claude writes each page as data. The vault draws it.",
+      "why": [
+       "Restyle once and every page changes.",
+       "Claude can't drift off-style. It never picks a color.",
+       "The same data can be drawn somewhere else later."
+      ],
+      "cost": [
+       "Only six shapes. Everything else is plain text.",
+       "A new shape means new code."
+      ],
+      "open": "How someone reading a page answers back."
+     }
+    ]
+   },
+   "title": "The same facts read in five seconds once they have a shape"
+  },
+  {
+   "type": "heading",
+   "text": "A page has three levels"
+  },
+  {
+   "type": "text",
+   "md": "Shapes alone made pages that read like a blog with pictures. So a page is now built at three levels, in this order."
+  },
+  {
+   "type": "steps",
+   "title": "Pick the kind of page, then the shapes, then say each point",
+   "items": [
+    {
+     "title": "The arc",
+     "text": "Decision, shipped, explainer, plan or review. It fixes the order of the sections."
+    },
+    {
+     "title": "The shapes",
+     "text": "Each section answers one question, and the question picks the shape."
+    },
+    {
+     "title": "The titles",
+     "text": "Every shape gets a sentence that says what it shows. Read only those and you have the story.",
+     "key": true
+    }
+   ]
+  },
+  {
+   "type": "compare",
+   "title": "A decision page and an explainer run in a different order",
+   "options": [
+    "Decision",
+    "Explainer",
+    "Review"
+   ],
+   "rows": [
+    {
+     "label": "Opens with",
+     "values": [
+      "What changed",
+      "The whole thing",
+      "The numbers"
+     ]
+    },
+    {
+     "label": "In the middle",
+     "values": [
+      "How it works now, then the options",
+      "The part that matters",
+      "The time it took"
+     ]
+    },
+    {
+     "label": "Ends with",
+     "values": [
+      "The decision",
+      "Whatever explains best",
+      "The work itself"
+     ]
+    }
+   ]
+  },
+  {
+   "type": "heading",
+   "text": "Three ways to do it"
+  },
+  {
+   "type": "text",
+   "md": "There are roughly three ways people get AI to answer in UI. I went with the most boring one on purpose."
+  },
+  {
+   "type": "compare",
+   "options": [
+    "Write the HTML",
+    "Fill in shapes",
+    "Build a UI tree"
+   ],
+   "picked": 1,
+   "rows": [
+    {
+     "label": "Who owns the look",
+     "values": [
+      "The model, every time",
+      "The renderer",
+      "The renderer"
+     ]
+    },
+    {
+     "label": "Can it drift off-style",
+     "values": [
+      "Yes",
+      "No",
+      "A little"
+     ]
+    },
+    {
+     "label": "What it can make",
+     "values": [
+      "Anything",
+      "Only the shapes you made",
+      "Anything its parts can build"
+     ]
+    },
+    {
+     "label": "Who does it",
+     "values": [
+      "Claude artifacts, Gemini",
+      "Vercel AI SDK, OpenAI apps",
+      "Google's A2UI, Vercel's json-render"
+     ]
+    }
+   ],
+   "title": "The canvas gives up range so the look can never drift"
+  },
+  {
+   "type": "heading",
+   "text": "A checker holds the line"
+  },
+  {
+   "type": "text",
+   "md": "The rules used to live only in Claude's instructions. Now one file holds the catalog, and every page goes through it before it's done."
+  },
+  {
+   "type": "flow",
+   "title": "A page isn't done until the checker and both screen sizes pass",
+   "nodes": [
+    {
+     "id": "ask",
+     "label": "Ask something",
+     "note": "with a shape in it"
+    },
+    {
+     "id": "write",
+     "label": "Claude writes it",
+     "note": "the arc, shapes, titles"
+    },
+    {
+     "id": "check",
+     "label": "The checker",
+     "note": "errors and warnings",
+     "key": true
+    },
+    {
+     "id": "look",
+     "label": "Shots at two sizes",
+     "note": "phone and laptop, day and night"
+    },
+    {
+     "id": "done",
+     "label": "On the shelf",
+     "kind": "end",
+     "key": true
+    },
+    {
+     "id": "fix",
+     "label": "Something's off",
+     "note": "a missing title, a wall of text",
+     "kind": "fail",
+     "row": 2
+    }
+   ],
+   "edges": [
+    {
+     "from": "ask",
+     "to": "write",
+     "key": true
+    },
+    {
+     "from": "write",
+     "to": "check",
+     "key": true
+    },
+    {
+     "from": "check",
+     "to": "look",
+     "key": true
+    },
+    {
+     "from": "look",
+     "to": "done",
+     "key": true
+    },
+    {
+     "from": "check",
+     "to": "fix"
+    },
+    {
+     "from": "fix",
+     "to": "write",
+     "label": "rewrite"
+    }
+   ]
+  },
+  {
+   "type": "heading",
+   "text": "Where it's going"
+  },
+  {
+   "type": "timeline",
+   "title": "From six shapes to a system in one day",
+   "items": [
+    {
+     "when": "Oct 12",
+     "title": "First pages",
+     "text": "Six shapes, then charts and dates, then a real client decision."
+    },
+    {
+     "when": "Oct 12",
+     "title": "A system",
+     "text": "Arcs, titles that say the point, four shapes for the work itself, and the checker.",
+     "key": true
+    },
+    {
+     "when": "Next",
+     "title": "Before and after from Figma",
+     "text": "Two frame links in, a matched pair out, pins suggested."
+    },
+    {
+     "when": "Later",
+     "title": "One spec, many places",
+     "text": "The same data drawn in chat, a slide, or Figma."
+    },
+    {
+     "when": "Later",
+     "title": "The portfolio",
+     "text": "Decision pages become case studies."
+    }
+   ]
+  }
+ ],
+ "foot": "This page is written in itself and passes its own checker.",
+ "arc": "explainer"
+}
+</script>
+<script src="/canvas.js"></script>
+</body>
+</html>
