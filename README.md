@@ -33,6 +33,8 @@ Captures (⌘I, or the box on Today) land in `inbox.md`. `app/skills/sort-inbox/
 
 A page of shapes instead of paragraphs: before and after, a flow, a decision, a chart. The agent writes the page as JSON in `<vault>/pages/<slug>.html`; the renderer in `app/canvas/` draws it at `/pages/<slug>.html`. The rules are in `app/skills/writing-canvas/SKILL.md`, every shape's fields in `reference.md` next to it, and `starter-vault/pages/writing-canvas.html` is the system written in itself.
 
+Pages are meant to be used, not only read. A `live` block puts a working piece (a slider, a picker, a toy) in the page, written as plain HTML in a `<template>`; a bigger tool is a folder, `<vault>/pages/<slug>/index.html` with its own scripts and data, served at `/pages/<slug>/`. What you pick on a page is kept with `vault.state` in `<vault>/pages/_state/`, so it's there next time and an agent can read it.
+
 Check a page before calling it done (with the reader running):
 
 ```sh

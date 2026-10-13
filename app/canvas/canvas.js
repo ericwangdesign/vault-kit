@@ -286,6 +286,17 @@
     // Code: a few lines that carry the point, in Geist Mono (the one place the canvas uses mono). `mark` lights the
     // lines that matter; `diff` reads a leading + or - as added or removed. Colour stays quiet: comments grey, strings
     // and numbers in the accent's ink, keywords a weight heavier, everything else plain.
+    // Something to use, not only look at: a piece of the page's own HTML and script (a <template> in the page, named by
+    // `template`), or a whole page of its own (`src`) in a frame that grows to fit it. It sits in the column like any
+    // shape, under a title that says what trying it shows. The pieces are mounted once the page is drawn (live() below).
+    live: function (b) {
+      var body = b.src
+        ? '<iframe class="cv-live-frame" src="' + esc(b.src) + '" title="' + esc(b.alt || b.title || 'Live piece') + '" loading="lazy"' + (b.h ? ' style="height:' + (+b.h) + 'px"' : '') + '></iframe>'
+        : '<div class="cv-live-mount" data-template="' + esc(b.template) + '"></div>';
+      return '<figure class="cv-block cv-live' + (b.bare ? ' is-bare' : '') + place(b, false) + '" style="margin-inline:0">' + title(b) +
+        '<div class="cv-live-card">' + body + '</div>' + cap(b) + '</figure>';
+    },
+
     code: function (b) {
       var lines = String(b.code || '').replace(/\n$/, '').split('\n'), marks = {};
       (b.mark || []).forEach(function (n) { marks[n] = 1; });
@@ -393,7 +404,7 @@
             var inNext = i < 6 && new Date(w.getFullYear(), w.getMonth(), w.getDate() + i + 1).getMonth() === mo;
             cells += '<span class="cv-c-day' + (inMonth ? (inPrev ? '' : ' is-first') + (inNext ? '' : ' is-last') : ' is-out') + (+d === today ? ' is-today' : '') + '" style="grid-column:' + (i + 1) + '">' + (inMonth ? '<b>' + d.getDate() + '</b>' : '') + '</span>';
           }
-          html += '<div class="cv-c-week" style="grid-template-rows:calc(var(--cv-num) + 2 * var(--cv-s1)) ' + (L ? 'repeat(' + L + ',calc(var(--cv-num) + var(--cv-s0))) ' : '') + 'var(--cv-s1)">' + cells + segs.join('') + '</div>';
+          html += '<div class="cv-c-week" style="grid-template-rows:calc(var(--cv-num) + 2 * var(--s1)) ' + (L ? 'repeat(' + L + ',calc(var(--cv-num) + var(--s0))) ' : '') + 'var(--s1)">' + cells + segs.join('') + '</div>';
         }
         return '<div class="cv-c-month"><div class="cv-c-name">' + MONTHS[mo] + ' ' + y + '</div><div class="cv-c-dow">' +
           ['S', 'M', 'T', 'W', 'T', 'F', 'S'].map(function (x) { return '<span>' + x + '</span>'; }).join('') + '</div>' + html + '</div>';
@@ -636,6 +647,30 @@
   src.parentNode.insertBefore(main, src);
   if (spec.title && !document.title) document.title = spec.title;
 
+  // Mount the live pieces. A script in a template has never run, so its copy runs once, in order, as it lands in the
+  // page: inside one, `document.currentScript.closest('.cv-live')` is the piece's own block, so two pieces never collide.
+  [].forEach.call(main.querySelectorAll('.cv-live-mount'), function (box) {
+    var t = document.getElementById(box.getAttribute('data-template'));
+    if (!t || !t.content) { box.innerHTML = bad('No <template id="' + box.getAttribute('data-template') + '"> in the page.'); return; }
+    box.appendChild(t.content.cloneNode(true));
+  });
+  // A framed page is the vault's own, so it can be measured: the frame takes the page's height, and day or night
+  // switched out here reaches it too.
+  [].forEach.call(main.querySelectorAll('.cv-live-frame'), function (f) {
+    var fixed = !!f.style.height;
+    function sync() {
+      var d; try { d = f.contentDocument; } catch (e) { return; }
+      if (!d || !d.documentElement) return;
+      d.documentElement.dataset.mode = document.documentElement.dataset.mode;
+      if (!fixed) f.style.height = d.documentElement.scrollHeight + 'px';
+    }
+    f.addEventListener('load', function () {
+      sync();
+      try { if (!fixed && window.ResizeObserver) new ResizeObserver(sync).observe(f.contentDocument.documentElement); } catch (e) {}
+    });
+    new MutationObserver(sync).observe(document.documentElement, { attributes: true, attributeFilter: ['data-mode'] });
+  });
+
   // A pin and its note light up together, from either end. Reading a note also zooms the picture in on its pin.
   function wirePins(fig, cur, sliding) {
     var hot = function (n, on, zoom) {
@@ -766,7 +801,7 @@
     // Connectors are drawn the way a modern canvas draws them: straight runs joined by rounded elbows, an open
     // chevron at the end, and loops that run in a lane of their own, clear of every box. Never a long flat curve.
     function elbow(pts) {
-      var R = 8, d = 'M' + pts[0][0] + ' ' + pts[0][1];  // the elbow's radius: --cv-r-sm
+      var R = 8, d = 'M' + pts[0][0] + ' ' + pts[0][1];  // the elbow's radius: --r-sm
       for (var i = 1; i < pts.length - 1; i++) {
         var p = pts[i - 1], v = pts[i], n = pts[i + 1];
         var l1 = Math.hypot(v[0] - p[0], v[1] - p[1]), l2 = Math.hypot(n[0] - v[0], n[1] - v[1]), r = Math.min(R, l1 / 2, l2 / 2);
@@ -813,7 +848,7 @@
           pts = [[a.r, ya], [lx, ya], [lx, yz], [z.r + GAP, yz]];
           mid = [z.r, at[e[1]] ? z.t - 16 : z.b + 16, 'end'];
         }
-        paths += '<path class="' + (e[2] ? 'is-key' : '') + '" d="' + elbow(pts) + '" marker-end="url(#cvArrow' + (e[2] ? 'K' : '') + uidF + ')"/>';
+        paths += line(e, pts);
         var lab = [].filter.call(labels, function (l) { return l.getAttribute('data-e') === String(i); })[0];
         if (lab) { lab.style.left = mid[0] + 'px'; lab.style.top = mid[1] + 'px'; lab.classList.toggle('is-start', mid[2] === 'start'); lab.classList.toggle('is-end', mid[2] === 'end'); }
       });
@@ -872,13 +907,23 @@
           pts = [[sx, a.b], [sx, ly], [ex, ly], [ex, z.b + GAP]];
           mid = [(sx + ex) / 2, ly];
         }
-        paths += '<path class="' + (e[2] ? 'is-key' : '') + '" d="' + elbow(pts) + '" marker-end="url(#cvArrow' + (e[2] ? 'K' : '') + uidF + ')"/>';
+        paths += line(e, pts);
         var lab = [].filter.call(labels, function (l) { return l.getAttribute('data-e') === String(i); })[0];
         if (lab) { lab.style.left = mid[0] + 'px'; lab.style.top = mid[1] + 'px'; lab.classList.toggle('is-start', mid[2] === 'start'); lab.classList.remove('is-end'); }
       });
       finish(paths);
     }
+    // Blue arrows wait and are drawn last, so the main path is never under a grey one where they cross.
+    var over = '';
+    function line(e, pts) {
+      var d = '<path class="' + (e[2] ? 'is-key' : '') + '" d="' + elbow(pts) + '" marker-end="url(#cvArrow' + (e[2] ? 'K' : '') + uidF + ')"/>';
+      if (!e[2]) return d;
+      over += d;
+      return '';
+    }
     function finish(paths) {
+      paths += over;
+      over = '';
       // Labels never sit on each other: a later one that would overlap an earlier one steps down until it's clear, or,
       // when it hangs off the right of a box, steps left.
       var placed = [];

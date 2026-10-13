@@ -101,6 +101,18 @@ export const DOCS = {
     example: '{ "type": "steps", "title": "md", "items": [ { "title": "md", "text": "md", "key": true } ], "caption": "md" }',
     notes: ['A process someone goes through, 3 to 6 steps, no branches. `key` marks the step that matters.'],
   },
+  live: {
+    example: '{ "type": "live", "title": "md: what trying it shows", "template": "picker", "caption": "md" }',
+    also: ['src', 'h', 'alt', 'bare'],
+    notes: [
+      'The piece is the page\'s own HTML: `<template id="picker">markup and <script></template>` anywhere in the body, named by `template`. Its scripts run in order once the page is drawn; `document.currentScript.closest(\'.cv-live\')` is its own block, so query inside that, never the whole document.',
+      'Write plain elements: `button`, `input`, `select`, `label`, `output` already wear the canvas\'s look, `.row` lays controls in a line. Colours, sizes and space come from the vault\'s tokens (`var(--accent)`, `var(--text-3)`, `var(--raised)`, `var(--s3)`, `var(--t-sm)`), never a literal.',
+      'A piece too big for a template is a page of its own: `"src": "/pages/<slug>/"`. The frame grows to the page\'s height (or `h` in px) and follows day and night. `alt` names it for a screen reader.',
+      'A piece with its own ground (a canvas, a map) takes `"bare": true`: no card, no padding.',
+      'What the reader does on it can stay: `await vault.state.get(key)` and `vault.state.set(key, value)` save to the vault, same on every device, and Claude reads them from `pages/_state/`.',
+      'Under 390px wide it still works by touch, with no hover-only controls. It never needs a sign-in, a key or a network call outside the vault.',
+    ],
+  },
   code: {
     example: '{ "type": "code", "title": "md: what the lines show", "lang": "JSON", "mark": [3, 4], "numbers": true,\n  "code": "line one\\nline two" }',
     also: ['diff', 'file'],
