@@ -2,12 +2,21 @@
 import { readdirSync, readFileSync, statSync, existsSync, watch } from 'node:fs';
 import { join, relative, sep } from 'node:path';
 import { homedir } from 'node:os';
+import { dirname } from 'node:path';
+
+// true / false, or null when this reader can't see the folder it would sit in (on the VM the reader runs as
+// `vault` and can't look inside /root/projects): only say "not found" when we could actually have looked.
+function onDisk(path) {
+  const full = String(path).split(',')[0].trim().replace(/^~/, homedir());
+  if (existsSync(full)) return true;
+  return existsSync(dirname(full)) ? false : null;
+}
 
 // Local, and a git repo — Drive was doing backup badly, on a university account
 // that goes away. GitHub does it properly and keeps the history.
 export const VAULT = process.env.VAULT_PATH || join(homedir(), 'Documents/Projects/vault');
 
-const FOLDER_ORDER = { core: 0, projects: 1, thoughts: 2, decisions: 3, reference: 4, journal: 5, cuttings: 6 };
+const FOLDER_ORDER = { personal: 0, projects: 1, thinking: 2, resources: 3, pages: 4, cuttings: 5 };
 
 function walk(dir, out = []) {
   for (const entry of readdirSync(dir, { withFileTypes: true })) {
@@ -127,7 +136,7 @@ function readAll() {
         clip: pick(data, 'clip'),
         seconds: pick(data, 'seconds'),
         screens: pick(data, 'screens'),
-        pathExists: path ? existsSync(path.replace(/^~/, homedir())) : null,
+        pathExists: path ? onDisk(path) : null,
         archived: pick(data, 'archived'),
         created: pick(data, 'created'),
         updated: pick(data, 'updated') || statSync(file).mtime.toISOString().slice(0, 10),
@@ -162,7 +171,8 @@ export function section(n) {
   if (n.type === 'inbox') return 'inbox';
   if (n.type === 'receipt') return 'inbox';
   if (n.type === 'thought' || n.type === 'decision') return 'thinking';
-  if (n.type === 'user' || n.type === 'feedback') return 'about';
+  // Personal is everything outside work: who I am, trips, people, the rest of life.
+  if (n.type === 'user' || n.type === 'feedback' || n.type === 'trip' || n.type === 'personal') return 'personal';
   return 'reference';
 }
 

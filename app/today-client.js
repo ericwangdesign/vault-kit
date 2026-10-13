@@ -23,9 +23,16 @@
   $('date').textContent = now.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric' });
   $('greet').textContent = h < 5 ? 'Still up' : h < 12 ? 'Good morning' : h < 18 ? 'Good afternoon' : 'Good evening';
   var projects = D.projects || [], todos = D.todos || [], R = D.resurfaced;
-  var line = '<b>' + projects.length + ' ' + plural(projects.length, 'project', 'projects') + '</b> open and <b>' + todos.length + ' ' + plural(todos.length, 'thing', 'things') + '</b> on your list.';
-  if (R && R.created) line += ' One idea from ' + MONTH[parse(R.created).getMonth()] + ' is back for a look.';
-  $('brief').innerHTML = line;
+  var TM = D.todoMeta || {}, suggest = D.suggest || [];
+  var openToday = todos.filter(function (t) { return !t.done; }).length;
+  function drawBrief() {
+    openToday = todos.filter(function (t) { return !t.done; }).length;
+    var line = '<b>' + projects.length + ' ' + plural(projects.length, 'project', 'projects') + '</b> open, ' +
+      (openToday ? '<b>' + openToday + ' ' + plural(openToday, 'thing', 'things') + '</b> picked for today.' : 'nothing picked for today yet.');
+    if (R && R.created) line += ' One idea from ' + MONTH[parse(R.created).getMonth()] + ' is back for a look.';
+    $('brief').innerHTML = line;
+  }
+  drawBrief();
 
   /* ---------- writes ---------- */
   function send(url, method, body) {
@@ -36,14 +43,10 @@
   var archive = function (name, on) { return send('/n/' + encodeURIComponent(name) + '/archive', 'POST', { on: on }); };
   // To-dos are addressed by line, and the list may have moved since the page loaded,
   // so find the line again by its text right before writing.
-  function tick(t, done) {
-    return fetch('/api/notes/todo').then(function (r) { return r.json(); }).then(function (n) {
-      var lines = n.raw.split('\n'), at = -1, re = /^\s*[-*]\s+\[[ xX]\]\s+/;
-      for (var i = 0; i < lines.length; i++) if (re.test(lines[i]) && lines[i].replace(re, '').trim() === t.raw) { at = i; break; }
-      if (at < 0) throw new Error('moved');
-      return send('/todo/' + at, 'POST', { done: done });
-    });
-  }
+  // To-dos are named by their text; the server finds the line, wherever it has moved to.
+  var todoSend = function (body) { return send('/todo/item', 'POST', body); };
+  function tick(t, done) { return todoSend({ text: t.raw, done: done }); }
+  function pick(t) { return todoSend({ text: t.raw, move: 'today' }); }
   var tid; function say(t) { $('toast').textContent = t; clearTimeout(tid); tid = setTimeout(function () { $('toast').textContent = ''; }, 4000); }
   // Replace a row with one quiet line and an undo. `undo` runs the opposite write.
   function settle(el, said, undo, rewire) {
@@ -57,29 +60,49 @@
     };
   }
 
-  /* ---------- to do ---------- */
-  var TODO_SHOW = 5, showAll = false;
+  /* ---------- to do: only what's picked for today ---------- */
+  // The whole list, and the sorting into If there's time and Later, lives on /todo. Here it's
+  // just today's few; with nothing picked yet, the next ones in line, one tap each.
   function drawTodo() {
-    var list = showAll ? todos : todos.slice(0, TODO_SHOW);
-    $('todo').innerHTML = '<div class="block-head"><h2><a href="/todo">To do</a></h2><span class="n">' + todos.length + '</span><a class="end" href="/todo">All</a></div><div class="card">' +
-      (list.length ? list.map(function (t, i) {
-        return '<div class="todo clamp' + (t.done ? ' done' : '') + '" data-i="' + i + '" role="checkbox" aria-checked="' + !!t.done + '" tabindex="0"><span class="check">' + CHECK + '</span>' +
-          '<span class="tx">' + esc(t.text) + '</span>' + '</div>';
-      }).join('') : '<div class="empty"><b>Nothing open.</b><span>Anything you say in the box above that sounds like a to-do lands here.</span></div>') +
-      (todos.length > TODO_SHOW ? '<button class="more" id="todoMore" type="button">' + (showAll ? 'Show fewer' : todos.length - TODO_SHOW + ' more') + '</button>' : '') + '</div>';
+    var stale = todos.length && !TM.fresh && TM.picked;
+    openToday = todos.filter(function (t) { return !t.done; }).length;
+    var n = todos.length ? (stale ? 'Picked ' + dm(TM.picked) : openToday) : '';
+    var rows = '';
+    if (todos.length) rows = todos.map(function (t, i) {
+      return '<div class="todo clamp' + (t.done ? ' done' : '') + '" data-i="' + i + '" role="checkbox" aria-checked="' + !!t.done + '" tabindex="0"><span class="check">' + CHECK + '</span>' +
+        '<span class="tx">' + esc(t.text) + '</span>' + '</div>';
+    }).join('');
+    // Suggestions stay until picked, so a morning's picking is a few taps in a row.
+    if (suggest.length) rows += '<div class="sugg-head">' + (todos.length ? 'Next in line:' : 'Nothing picked yet. Next in line:') + '</div>' + suggest.map(function (t, i) {
+      return '<div class="sugg"><span class="tx">' + esc(t.text) + '</span><button class="btn" type="button" data-pick="' + i + '">Today</button></div>';
+    }).join('');
+    if (!rows) rows = '<div class="empty"><b>Nothing picked for today.</b><span>Pick from <a href="/todo">your list</a>.</span></div>';
+    var rest = TM.time ? TM.time + ' more if there’s time' : TM.later ? TM.later + ' kept for later' : '';
+    $('todo').innerHTML = '<div class="block-head"><h2><a href="/todo">To do</a></h2>' + (n ? '<span class="n">' + n + '</span>' : '') + '<a class="end" href="/todo">Whole list</a></div><div class="card">' +
+      rows + (todos.length && !suggest.length && rest ? '<a class="more" href="/todo">' + rest + '</a>' : '') + '</div>';
     $('todo').querySelectorAll('.todo').forEach(function (el) {
       var t = todos[el.dataset.i], busy = false;
       var flip = function () {
         if (busy) return; busy = true;
         var done = !el.classList.contains('done');
         el.classList.toggle('done', done); el.setAttribute('aria-checked', done);
-        tick(t, done).then(function () { t.done = done; })
+        tick(t, done).then(function () { t.done = done; drawBrief(); var c = $('todo').querySelector('.block-head .n'); if (c && !(TM.picked && !TM.fresh)) c.textContent = openToday; })
           .catch(function () { el.classList.toggle('done', !done); el.setAttribute('aria-checked', !done); say('Couldn’t tick that one. Refresh and try again.'); })
           .then(function () { busy = false; });
       };
       el.onclick = flip; el.onkeydown = function (e) { if (e.key === ' ' || e.key === 'Enter') { e.preventDefault(); flip(); } };
     });
-    var more = $('todoMore'); if (more) more.onclick = function () { showAll = !showAll; drawTodo(); };
+    $('todo').querySelectorAll('[data-pick]').forEach(function (b) {
+      b.onclick = function () {
+        b.disabled = true;
+        var t = suggest[b.dataset.pick];
+        pick(t).then(function () {
+          suggest.splice(suggest.indexOf(t), 1); todos.push(t); if (TM.time) TM.time--;
+          drawTodo(); drawBrief();
+        })
+          .catch(function () { b.disabled = false; say('Couldn’t pick that one. Refresh and try again.'); });
+      };
+    });
   }
   drawTodo();
 

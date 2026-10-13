@@ -160,7 +160,7 @@ export function analyzeFolder(folder, cuts, focus) {
 
   const job = { state: 'running', started: Date.now(), count: shots.length };
   jobs.set(f, job);
-  const child = spawn('/opt/homebrew/bin/claude', ['-p', '--allowedTools', 'Read', '--add-dir', root, '--output-format', 'text'], {
+  const child = spawn('claude', ['-p', '--allowedTools', 'Read', '--add-dir', root, '--output-format', 'text'], {
     cwd: root,
     env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/bin:/bin:${process.env.PATH || ''}` },
     stdio: ['pipe', 'pipe', 'pipe'],

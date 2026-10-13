@@ -71,12 +71,20 @@ export function todayData(notes, now = new Date()) {
   const resurfaced = pool.length ? pool[seed % pool.length] : null;
   const category = resurfaced?.group ? notes.find((n) => n.type === 'category' && n.group === resurfaced.group) : null;
 
+  // To do on the home page is only what was picked for today. When nothing is picked yet, the
+  // next few in line come along as suggestions, one tap each; the whole list lives on /todo.
   const t = readTodos();
-  const todos = (t?.items || []).filter((i) => !i.done).map((i) => {
+  const slimTodo = (i) => {
     const link = /\[\[([^\]|]+)(?:\|[^\]]*)?\]\]/.exec(i.text);
     const text = i.text.replace(/\[\[[^\]]+\]\]/g, '').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/[\s.—-]+$/, '').trim();
-    return { text, raw: i.text, link: link ? link[1] : '' };
-  });
+    return { text, raw: i.text, link: link ? link[1] : '', done: i.done };
+  };
+  const items = t?.items || [];
+  const openIn = (k) => items.filter((i) => !i.done && i.tier === k);
+  const todos = items.filter((i) => i.tier === 'today' && (!i.done || t.fresh)).map(slimTodo);
+  const suggest = todos.length ? [] : openIn('time').concat(openIn('new')).slice(0, 3).map(slimTodo);
+  const todoMeta = { time: openIn('time').length, later: openIn('later').length, sort: openIn('new').length,
+    picked: t?.picked || '', fresh: !!t?.fresh };
 
   const sorted = readSorted();
   const waiting = readInbox();
@@ -92,6 +100,8 @@ export function todayData(notes, now = new Date()) {
     resurfaced: resurfaced ? { ...slim(resurfaced), groupTitle: category?.title || '' } : null,
     projects: projects.map(slim),
     todos,
+    suggest,
+    todoMeta,
     waiting: waiting.slice().reverse().map((w) => ({ at: w.at, text: w.text })),
     landed: sorted.slice(-5).reverse().map(({ raw, ...c }) => c),
     activity: { days, counts, week: counts.slice(-7).reduce((a, b) => a + b, 0), lastWeek: counts.slice(-14, -7).reduce((a, b) => a + b, 0) },

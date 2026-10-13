@@ -1,6 +1,6 @@
 ---
 name: sort-inbox
-description: Sort the owner's Intake captures (vault/inbox.md) into the to-do list, projects, ideas, Thinking or Resources, and log each one in the receipt. Use when the owner says "sort", at the start of a session if the inbox has lines, or when a scheduled run asks for it.
+description: Sort the owner's Intake captures (vault/inbox.md) into the to-do list, projects, ideas, Thinking, Resources or Personal, and log each one in the receipt. Use when the owner says "sort", at the start of a session if the inbox has lines, or when a scheduled run asks for it.
 ---
 
 # Sort the inbox
@@ -13,11 +13,12 @@ Vault: the folder in `VAULT_PATH`. Captures are `- **YYYY-MM-DD HH:MM** text` li
 
 | It is… | Goes to | Also |
 |---|---|---|
-| A job to do ("print something at the office") | `todo.md`, as a `- [ ] ` line, written as an action | Keep their words; tighten only if it's messy |
+| A job to do ("print something at the office") | `todo.md`, as a `- [ ] ` line at the very end of the file (under `## New`), written as an action | Keep their words; tighten only if it's messy. Never move lines between `## Today`, `## If there's time` and `## Later`: that's their call |
 | About a project in motion ("tree shadow on the portfolio") | That project's note, in the body where it belongs | Update `next:` if it changes what's next. Set `nudged:` in frontmatter to the current local time (`YYYY-MM-DDTHH:MM:SS`) so the index shows a dot |
 | A new idea ("what if we build…") | A new note in the right `ideas/<category>/` folder (`type: idea`) | Match the category heads: toys, tools, instruments, pursuits |
-| Their own thinking or learning | `thoughts/`, `type: thought` | Short; their words first. Set `category:` to one of `loose` (shelf "Loose thoughts": a passing thought, a few sentences, not worked out — the default for a quick `thought:`), `craft` (design, motion, interaction, process, the vault, once it's worked out at some length), `career` (shelf "Where I'm headed": direction, goals, reputation), `personal` (family, life outside work), `weeks` (weekly reviews only) |
-| Something someone else made or taught | `reference/` — inspiration, tools, learnings, classes or books, as a `### [Name](url)` entry | Personal learnings are Thinking, not Resources |
+| Their own thinking or learning | `thinking/`, `type: thought` | Short; their words first. Set `category:` to one of `loose` (shelf "Loose thoughts": a passing thought, a few sentences, not worked out — the default for a quick `thought:`), `craft` (design, motion, interaction, process, the vault, once it's worked out at some length), `career` (shelf "Where I'm headed": direction, goals, reputation), `weeks` (weekly reviews only) |
+| Life outside work: a trip, family, people, how they work | `personal/`. A trip is its own note, `type: trip` (`status:`, `page:` like a project); anything else `type: personal`. Who they are and how they work stays in `about-me` | The Personal shelf. Never Thinking, never Projects |
+| Something someone else made or taught | `resources/` — inspiration, tools, learnings, classes or books, as a `### [Name](url)` entry | Personal learnings are Thinking, not Resources |
 | Client work | `work/clients/<client>.md` or the right `work/` note | |
 
 **Editing rules — these matter more than the filing:**

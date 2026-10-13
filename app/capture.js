@@ -21,7 +21,7 @@ export function capturePage() {
 <meta name="apple-mobile-web-app-capable" content="yes">
 <meta name="apple-mobile-web-app-title" content="Capture">
 <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
-<script>(function(){var c=(document.cookie.match(/(?:^|; )theme=(light|dark)/)||[])[1];if(!c){try{c=localStorage.getItem('theme')}catch(e){}}if(c==='light'){document.documentElement.dataset.mode='light';document.querySelector('meta[name=theme-color]').content='#f5f5f5'}})();</script>
+<script>(function(){var c=(document.cookie.match(/(?:^|; )theme=(light|dark)/)||[])[1];if(!c){try{c=localStorage.getItem('theme')}catch(e){}}if(c==='light'){document.documentElement.dataset.mode='light';document.querySelector('meta[name=theme-color]').content='#ffffff'}})();</script>
 <style>${TOKENS}
 /* The page itself never scrolls: iOS nudges a scrollable page when the keyboard opens and
    leaves a stale copy of the text behind the status bar. */
@@ -31,14 +31,14 @@ form{position:absolute;inset:0;display:flex;flex-direction:column;
 .bar{display:flex;align-items:center;gap:9px;height:52px;padding:0 10px 0 16px;flex:none}
 .bar img{width:22px;height:22px;border-radius:6px}
 .bar b{font-weight:500;margin-right:auto}
-.bar a{display:inline-flex;align-items:center;height:32px;padding:0 13px;border-radius:999px;background:var(--hover-2);color:var(--text-2);font-size:13px}
+.bar a{display:inline-flex;align-items:center;height:32px;padding:0 13px;border-radius:999px;background:var(--hover-2);color:var(--text-2);font-size:14px}
 .box{flex:1;min-height:0;display:flex;flex-direction:column;margin:4px 12px 0;padding:16px 16px 10px;background:var(--surface);border-radius:22px;box-shadow:var(--shadow-lg)}
 /* 17px: anything under 16 makes iOS zoom the page when the keyboard comes up. */
 textarea{flex:1;min-height:0;width:100%;resize:none;border:0;padding:0;background:none;color:var(--text);
-  font:inherit;font-size:17px;line-height:26px;letter-spacing:-0.01em;outline:none}
+  font:inherit;font-size:16px;line-height:24px;letter-spacing:-0.01em;outline:none}
 textarea::placeholder{color:var(--text-3)}
 .row{display:flex;align-items:center;gap:10px;padding-top:10px;flex:none}
-.state{flex:1;min-width:0;font-size:13px;color:var(--text-3)}
+.state{flex:1;min-width:0;font-size:14px;color:var(--text-3)}
 button{width:40px;height:40px;flex:none;display:grid;place-items:center;border:0;border-radius:50%;
   background:var(--btn);color:var(--btn-text);opacity:.22;transition:opacity .14s}
 button svg{width:18px;height:18px;fill:none;stroke:currentColor;stroke-width:2.2;stroke-linecap:round;stroke-linejoin:round}
