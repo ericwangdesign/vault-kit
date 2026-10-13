@@ -79,6 +79,18 @@ export const PAGE_TYPES = {
   '.woff2': 'font/woff2', '.wasm': 'application/wasm', '.glb': 'model/gltf-binary', '.gltf': 'model/gltf+json',
 };
 
-// Pages no note links to yet. Pages in a folder (canvas-tests/) are reached from that folder's
-// index page, so only the top level and folder index pages count.
-export const homelessPages = (notes) => allPages(notes).filter((p) => !p.folder && !p.from.length);
+// Every page must be reachable without its URL: a fundamental rule. A page is reached when a note links it (it's then
+// listed under Pages on that note, wherever in the text the link sits), or when it sits in a folder whose index page
+// links it. Anything else waits in the Inbox under "Pages with no note".
+const linkedFromIndex = (p) => {
+  if (!p.folder) return false;
+  const index = join(ROOT, p.folder, 'index.html');
+  if (!existsSync(index)) return false;
+  const html = readFileSync(index, 'utf8'), file = p.page.slice(('/pages/' + p.folder + '/').length);
+  return html.includes(p.page) || new RegExp(`href=["'](\\./)?${file.replace(/[.*+?^${}()|[\]\\]/g, '\\$&')}["'#?]`).test(html);
+};
+export const homelessPages = (notes) => allPages(notes).filter((p) => !p.from.length && !linkedFromIndex(p));
+
+// The pages a note links, for the Pages list on that note. Its own `page:` is left out: that one is already its picture
+// and its Open button.
+export const pagesOf = (n, notes) => allPages(notes).filter((p) => p.page !== n.page && p.from.some((f) => f.name === n.name));
