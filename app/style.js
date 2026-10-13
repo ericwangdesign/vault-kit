@@ -111,11 +111,13 @@ export const TOKENS = `
   --hover: rgba(0,0,0,.04);
   --hover-2: rgba(0,0,0,.07);
   --line: rgba(0,0,0,.08);
-  --line-2: rgba(0,0,0,.16);
-  --accent: #0069d1;
-  /* Day blue comes straight off the accent's hue: mixing toward grey made it dusty. */
+  --line-2: rgba(0,0,0,.12);
+  --fill-2: color-mix(in srgb, var(--text) 18%, var(--surface));  /* a step lighter by day: 24% read heavy on white */
+  /* Apple's blues (apple.com, Oct 2026): #0071e3 for buttons and fills, #0066cc for blue text. The old #0069d1 read dated. */
+  --accent: #0071e3;
+  /* The tint comes straight off the accent's hue: mixing toward grey made it dusty. */
   --accent-soft: oklch(from var(--accent) .945 .035 h);
-  --accent-ink: oklch(from var(--accent) .46 calc(c * .95) h);
+  --accent-ink: #0066cc;
   --ok: #15803d;
   --bad: #e5484d;
   --btn: #0f0f0f;
