@@ -5,7 +5,8 @@ import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
 import { join } from 'node:path';
 
-const CHROME = process.env.CHROME || '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome';
+// CHROME overrides. On a Mac it's the app in /Applications; elsewhere `google-chrome` on the PATH.
+const CHROME = process.env.CHROME || (process.platform === 'darwin' ? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome' : 'google-chrome');
 export const sleep = (ms) => new Promise((r) => setTimeout(r, ms));
 
 export async function launch() {
