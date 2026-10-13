@@ -39,7 +39,7 @@ Check a page before calling it done (with the reader running):
 cd app && VAULT_PATH=<vault> node canvas/check.mjs <vault>/pages/<slug>.html
 ```
 
-Screenshots (`canvas/shot.mjs`) and the layout check use Google Chrome from `/Applications`.
+Screenshots (`canvas/shot.mjs`) and the layout check use Google Chrome: the app in `/Applications` on a Mac, `google-chrome` on the PATH elsewhere, or set `CHROME` to its path.
 
 ## Putting it on the web (optional)
 
