@@ -43,6 +43,13 @@ export async function launch() {
     await sleep(250);
     if (load) await walk();
   }
-  function close() { try { ws.close(); } catch {} proc.kill(); try { rmSync(dir, { recursive: true, force: true }); } catch {} }
+  // Local tweak: wait for Chrome to exit before deleting its profile. Deleting right after kill() raced Chrome,
+  // which re-wrote the dir, so every screenshot leaked a ~55 MB /tmp/cvshot-* profile and filled the disk.
+  const rm = () => { try { rmSync(dir, { recursive: true, force: true }); } catch {} };
+  function close() {
+    try { ws.close(); } catch {}
+    if (proc.exitCode !== null || proc.signalCode !== null) return rm();
+    return new Promise((r) => { const t = setTimeout(() => { try { proc.kill('SIGKILL'); } catch {} }, 3000); proc.once('exit', () => { clearTimeout(t); rm(); r(); }); proc.kill(); });
+  }
   return { send, evalJs, open, walk, close };
 }
