@@ -24,11 +24,18 @@ export function readTodos() {
   const n = byName('todo');
   if (!n) return null;
   const items = [];
-  n.file && readFileSync(n.file, 'utf8').split('\n').forEach((line, i) => {
+  let cur = 'new';
+  const raw = n.file ? readFileSync(n.file, 'utf8') : '';
+  raw.split('\n').forEach((line, i) => {
+    const h = HEAD.exec(line);
+    if (h) { cur = tierOf(h[1]); return; }
     const m = ITEM.exec(line);
-    if (m) items.push({ line: i, done: m[2].toLowerCase() === 'x', text: m[4].trim() });
+    if (m) items.push({ line: i, done: m[2].toLowerCase() === 'x', text: m[4].trim(), tier: cur });
   });
-  return { note: n, items };
+  const pm = /^picked:\s*([^\s\n]+)/m.exec(raw);
+  const picked = pm ? pm[1] : (n.picked ? String(n.picked) : '');
+  const fresh = picked === localDay();
+  return { note: n, items, picked, fresh };
 }
 
 // The page names an item by its text, not its line: lines shift with every move, and the
@@ -36,9 +43,37 @@ export function readTodos() {
 export function lineOfText(text) {
   const want = String(text || '').trim();
   const lines = readFileSync(note().file, 'utf8').split('\n');
-  const at = lines.findIndex((l) => { const m = ITEM.exec(l); return m && m[4].trim() === want; });
+  let at = lines.findIndex((l) => { const m = ITEM.exec(l); return m && m[4].trim() === want; });
+  if (at < 0) {
+    const cleanWant = want.replace(/\[\[[^\]]+\]\]/g, '').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/[\s.—-]+$/, '').trim();
+    at = lines.findIndex((l) => {
+      const m = ITEM.exec(l);
+      if (!m) return false;
+      const cleanLine = m[4].replace(/\[\[[^\]]+\]\]/g, '').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/[\s.—-]+$/, '').trim();
+      return cleanLine === cleanWant;
+    });
+  }
   if (at < 0) throw new Error('not on the list any more');
   return at;
+}
+
+export function updateTodo(text, next) {
+  const clean = String(next || '').replace(/[\r\n]+/g, ' ').trim().slice(0, 300);
+  const at = lineOfText(text);
+  if (!clean) return removeTodo(at);
+  const n = note();
+  const lines = readFileSync(n.file, 'utf8').split('\n');
+  const m = ITEM.exec(lines[at] ?? '');
+  if (!m) throw new Error('not a checklist line');
+  const oldLink = /\[\[[^\]]+\]\]/.exec(m[4]);
+  let fullNext = clean;
+  for (const [md, label] of m[4].matchAll(/\[([^\]]+)\]\([^)]+\)/g)) {
+    if (!fullNext.includes(md) && fullNext.includes(label)) fullNext = fullNext.replace(label, md);
+  }
+  if (oldLink && !/\[\[[^\]]+\]\]/.test(clean)) fullNext = clean + ' ' + oldLink[0];
+  lines[at] = m[1] + m[2] + m[3] + fullNext;
+  save(n, lines);
+  return { text: fullNext };
 }
 
 export function setTodo(lineNo, done) {
@@ -52,7 +87,7 @@ export function setTodo(lineNo, done) {
   return { line: lineNo, done: !!done };
 }
 
-export function addTodo(text) {
+export function addTodo(text, tier) {
   const clean = String(text || '').replace(/[\r\n]+/g, ' ').trim().slice(0, 300);
   if (!clean) throw new Error('empty');
   const n = note();
