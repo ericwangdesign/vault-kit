@@ -88,7 +88,7 @@
 .frame.cv > .cv-xwide { grid-column: xwide; }
 /* In a wide shape only the picture breaks out. Its title, switch, notes and caption stay on the text column's edge,
    so every line of words on the page starts at the same x. (Percent margins are of the shape's width.) */
-.frame.cv > :is(.cv-wide, .cv-xwide) > :is(.cv-s-title, .cv-ba-bar, .cv-notes, .cv-cap) { margin-inline: calc((100% - min(100%, var(--cv-measure))) / 2); }
+.frame.cv > :is(.cv-wide, .cv-xwide) > :is(.cv-s-title, .cv-ba-bar, .cv-notes, .cv-cap) { margin-inline: min(var(--cv-wide-step), calc((100% - min(100%, var(--cv-measure))) / 2)); }
 .frame.cv > .up, .frame.cv > .sw { position: relative; inset: auto; grid-row: 1; margin-bottom: var(--s7); font-size: var(--t-md); color: var(--text-3); }
 .frame.cv > .up { justify-self: start; margin-left: calc(-1 * var(--s2)); }
 .frame.cv > .sw { justify-self: end; margin-right: calc(-1 * var(--s2)); background: none; border: 0; padding: 0; cursor: pointer; }
@@ -272,9 +272,12 @@
 .cv-node.is-gone { background: none; color: var(--text-3); box-shadow: inset 0 0 0 1.5px var(--wire); }
 .cv-node.is-gone .t { text-decoration: line-through; text-decoration-color: var(--text-3); }
 .cv-node.is-moved { box-shadow: inset 0 0 0 1.5px var(--accent); }
-.cv-zoom { position: absolute; top: var(--s3); right: var(--s3); z-index: 2; display: flex; gap: var(--s1); padding: var(--s1); border-radius: var(--r-pill); background: var(--raised); cursor: default; }
+.cv-zoom { position: absolute; top: var(--s3); right: var(--s3); z-index: 2; display: flex; gap: var(--s1); padding: var(--s1); border-radius: var(--r-pill); background: var(--raised); cursor: default; user-select: none; -webkit-user-select: none; }
 .cv-zoom button { min-width: var(--cv-ctl-sm); height: var(--cv-ctl-sm); padding: 0 var(--s2); border: 0; border-radius: var(--r-pill); background: none; font: inherit; font-size: var(--t-sm); color: var(--text-2); cursor: pointer; }
 .cv-zoom button:hover { background: var(--surface); color: var(--text); }
+/* Controls anywhere on a page (switch segments, Copy, zoom) are chrome, not words: a drag never selects them, so a
+   comment can't land on them either. A collapsible's head is a button but its title is the page's words: it stays. */
+.frame :is(button, [role="button"], [role="tab"]):not(.cv-coll-head) { user-select: none; -webkit-user-select: none; }
 
 /* ---------- compare ---------- */
 .cv-compare { display: grid; grid-template-columns: minmax(8rem, .8fr) repeat(var(--cols), minmax(0, 1fr)); padding: var(--s1); border-radius: var(--r-md); background: var(--surface); }
@@ -602,19 +605,19 @@
 
 /* Gantt: one row per thing, a bar for how long, a dot for a single day, and a blue line for today. */
 .cv-gantt { --lab: 176px; position: relative; }
-.cv-g-legend { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s5); margin: calc(-1 * var(--s2)) 0 var(--s5); font-size: var(--t-sm); line-height: var(--lh-sm); color: var(--text-3); }
+.cv-g-legend { display: flex; flex-wrap: wrap; gap: var(--s2) var(--s5); margin: calc(-1 * var(--s2)) 0 var(--s3); font-size: var(--t-sm); line-height: var(--lh-sm); color: var(--text-3); }
 .cv-g-legend span { display: inline-flex; align-items: center; gap: var(--s2); }
 .cv-g-legend i { flex: none; border-radius: var(--r-xs); background: var(--fill-2); }
 .cv-g-legend i.bar { width: var(--cv-num); height: var(--cv-dot-lg); border-radius: var(--r-2xs); }
 .cv-g-legend i.bar.is-key { background: var(--accent); }
 .cv-g-legend i.dot { width: var(--cv-dot-lg); height: var(--cv-dot-lg); border-radius: 50%; background: var(--text-3); }
-.cv-g-ticks { position: relative; height: var(--cv-bar-track); margin-left: calc(var(--lab) + var(--s4)); font-size: var(--t-xs); line-height: var(--lh-xs); color: var(--text-3); }
+.cv-g-ticks { position: relative; height: var(--lh-xs); margin: 0 0 var(--s2) calc(var(--lab) + var(--s4)); font-size: var(--t-xs); line-height: var(--lh-xs); color: var(--text-3); }
 .cv-g-ticks span { position: absolute; white-space: nowrap; }
-.cv-g-group { margin-top: var(--s4); padding: var(--s1) 0; font-size: var(--t-sm); line-height: var(--lh-sm); font-weight: var(--w-medium); color: var(--text-2); }
-.cv-g-ticks + .cv-g-group { margin-top: var(--s2); }
-.cv-g-row { display: grid; grid-template-columns: var(--lab) minmax(0, 1fr); column-gap: var(--s4); align-items: center; min-height: var(--s6); }
+.cv-g-group { margin: var(--s4) 0 var(--s1); padding: 0; font-size: var(--t-xs); line-height: var(--lh-xs); font-weight: var(--w-medium); color: var(--text-3); }
+.cv-g-ticks + .cv-g-group { margin-top: 0; }
+.cv-g-row { display: grid; grid-template-columns: var(--lab) minmax(0, 1fr); column-gap: var(--s4); align-items: center; min-height: var(--s6); padding: var(--s1) 0; }
 .cv-g-label { font-size: var(--t-sm); line-height: var(--lh-sm); color: var(--text); }
-.cv-g-label .note { display: block; color: var(--text-3); }
+.cv-g-label .note { display: block; font-size: var(--t-xs); line-height: var(--lh-xs); font-weight: var(--w-body); color: var(--text-3); }
 .cv-g-track { position: relative; height: var(--cv-bar-track); }
 .cv-g-bar { position: absolute; top: calc((var(--cv-bar-track) - var(--cv-bar)) / 2); bottom: calc((var(--cv-bar-track) - var(--cv-bar)) / 2); min-width: var(--cv-dot-sm); border-radius: var(--r-xs); background: var(--fill-2); }
 .cv-g-dot { position: absolute; top: 50%; width: var(--cv-dot-lg); height: var(--cv-dot-lg); margin: calc(var(--cv-dot-lg) / -2) 0 0 calc(var(--cv-dot-lg) / -2); border-radius: 50%; background: var(--text-3); }
