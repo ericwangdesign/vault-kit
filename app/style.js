@@ -19,10 +19,8 @@
 // 20, section 16, everything else 14, labels 13), radii 4 / 8 / 12, and padding that is the same
 // on every side. Grey text is the canvas's mixes, so every level passes AA in both themes.
 //
-// Since Oct 13, 2026 this block is the one source for the reader, the writing canvas (canvas.css
-// uses these names directly, no --cv- copies) and the preview at /pages/design-system.html.
-// Atelier (Projects/workspace/tokens.css) keeps its own file, since it ships on its own, but uses
-// the same scale and the same names behind a --c- prefix.
+// This block is the one source for the reader and the writing canvas (canvas.css uses these names
+// directly, no --cv- copies). Every value is shown, live, at /pages/design-system.html.
 
 export const TOKENS = `
 :root {
@@ -69,7 +67,7 @@ export const TOKENS = `
   --font: "Geist", ui-sans-serif, -apple-system, "Segoe UI", sans-serif;
   --mono: "Geist Mono", ui-monospace, "SF Mono", Menlo, monospace;   /* code only */
   --t-xs: 11px;    --lh-xs: 16px;     /* badges, pin numbers, chart ticks */
-  --t-ui: 12px;    --lh-ui: 16px;     /* tool chrome (Atelier's panels); code at 20 */
+  --t-ui: 12px;    --lh-ui: 16px;     /* tool chrome, dense panels; code at 20 */
   --t-sm: 13px;    --lh-sm: 18px;     /* labels, meta, captions */
   --t-md: 14px;    --lh-md: 20px;     /* body, names, shape titles */
   --t-lg: 16px;    --lh-lg: 22px;     /* section headings */
@@ -91,7 +89,7 @@ export const TOKENS = `
   --r-lg: 24px;    /* the composer, floating panels */
   --r-pill: 999px;
 
-  /* Reading size, line and column. The typography panel (settings.js) moves these. */
+  /* Reading size, line and column for notes (.prose). */
   --size: 14px;
   --leading: 1.43;
   --measure: 640px;
@@ -106,14 +104,17 @@ export const TOKENS = `
   --text-body: #2c2c2c;
   --text-2: #494949;
   --text-3: #6b6b6b;
-  --raised: color-mix(in srgb, var(--text) 4%, var(--surface));
-  --wire: color-mix(in srgb, var(--text) 11%, var(--surface));
-  --hover: rgba(0,0,0,.04);
-  --hover-2: rgba(0,0,0,.07);
-  --line: rgba(0,0,0,.08);
-  --line-2: rgba(0,0,0,.12);
-  --fill-2: color-mix(in srgb, var(--text) 18%, var(--surface));  /* a step lighter by day: 24% read heavy on white */
-  /* Apple's blues (apple.com, Oct 2026): #0071e3 for buttons and fills, #0066cc for blue text. The old #0069d1 read dated. */
+  /* Day greys a quarter lighter than night's mixes. Text stays put: it's what
+     keeps every level AA. */
+  --raised: color-mix(in srgb, var(--text) 3%, var(--surface));
+  --fill: color-mix(in srgb, var(--text) 9%, var(--surface));
+  --wire: color-mix(in srgb, var(--text) 8%, var(--surface));
+  --fill-2: color-mix(in srgb, var(--text) 14%, var(--surface));
+  --hover: rgba(0,0,0,.03);
+  --hover-2: rgba(0,0,0,.05);
+  --line: rgba(0,0,0,.06);
+  --line-2: rgba(0,0,0,.09);
+  /* Apple's blues (apple.com): #0071e3 for buttons and fills, #0066cc for blue text. The old #0069d1 read dated. */
   --accent: #0071e3;
   /* The tint comes straight off the accent's hue: mixing toward grey made it dusty. */
   --accent-soft: oklch(from var(--accent) .945 .035 h);
@@ -185,7 +186,7 @@ const PROSE = `
 .prose a { color: inherit; text-decoration: underline; text-decoration-color: var(--line-2); text-decoration-thickness: 1px; text-underline-offset: 3px; transition: text-decoration-color .15s, color .15s; }
 .prose a:hover { text-decoration-color: currentColor; color: var(--text); }
 .prose a.dangling { color: var(--text-3); text-decoration-style: dashed; cursor: help; }
-.prose code { font-family: var(--mono); font-size: .875em; color: var(--text); background: var(--hover-2); padding: 1px 4px; border-radius: var(--r-xs); }
+.prose code { font-family: var(--mono); font-size: .875em; color: var(--text); background: var(--hover-2); padding: var(--s0) calc(var(--s1) + var(--s0)); border-radius: var(--r-xs); }
 .prose pre { margin: 4px 0; padding: 12px; background: var(--surface); border-radius: var(--r-sm); overflow-x: auto; }
 .prose pre code { padding: 0; background: none; font-size: var(--t-ui); line-height: var(--lh-md); }
 .prose blockquote { margin: 0; padding: 2px 0 2px 16px; border-left: 2px solid var(--line-2); color: var(--text-2); display: flex; flex-direction: column; gap: 8px; }
@@ -349,6 +350,7 @@ details.block[open] > summary h2::after { transform: rotate(45deg); margin-botto
 details.block > summary:hover h2::after { border-color: var(--text); }
 
 .empty { padding: 12px; color: var(--text-3); display: flex; flex-direction: column; gap: 2px; }
+.empty[hidden] { display: none; } /* recount() hides it once a list has rows */
 .empty b { font-weight: var(--w-medium); color: var(--text-2); }
 
 /* ---------- pills, tags, buttons ---------- */
@@ -374,6 +376,27 @@ details.block > summary:hover h2::after { border-color: var(--text); }
 .brief { margin-top: 16px; max-width: 640px; font-size: var(--t-md); line-height: var(--lh-md); color: var(--text-body); text-wrap: pretty; }
 .brief b { font-weight: var(--w-bold); color: var(--text); }
 @media (max-width: 759px) { .hello { padding-top: 8px; } }
+/* Today's head (Oct 17): the time big, then facts to act on as chips: the next event, what's running, what's open */
+.hello .now-time { display: flex; flex-wrap: wrap; align-items: baseline; column-gap: 12px; margin: 0; font-size: 28px; line-height: 34px; font-weight: var(--w-body); letter-spacing: var(--tr-tight); font-variant-numeric: tabular-nums; }
+.hello .now-time .day { font-size: var(--t-md); line-height: var(--lh-md); font-weight: var(--w-body); letter-spacing: 0; color: var(--text-3); }
+.facts { display: flex; flex-wrap: wrap; gap: 6px; margin: 12px 0 0; }
+.facts .f { display: inline-flex; align-items: center; gap: 5px; min-height: 28px; padding: 2px 10px; border-radius: var(--r-pill); background: var(--surface); color: var(--text-2); font-size: var(--t-sm); line-height: var(--lh-sm); }
+.facts a.f:hover { background: var(--hover-2); color: var(--text); }
+.facts .f b { color: var(--text); font-weight: var(--w-body); }
+.facts .ev { color: var(--text); }
+.facts .ev i { font-style: normal; color: var(--text-3); }
+.facts .ev span { color: var(--text-3); }
+.facts .ev.soon { background: var(--accent-soft); }
+.facts .ev.soon i, .facts .ev.soon span { color: var(--accent); }
+@media (max-width: 759px) {
+  .facts .run { display: none; } /* what's running is on the Mac */
+  .facts .ev { display: block; border-radius: var(--r-md); padding: 6px 12px; } /* a long event reads as one sentence, not three columns */
+  .facts .ev i { margin-right: 6px; } .facts .ev span { margin-left: 6px; }
+}
+/* Today two steps up (Oct 17): labels 14, body 16, Open's next line 17, card headings 20; cards 32 apart so the type,
+   not the gaps, carries the page */
+.is-today .main { --t-sm: 14px; --lh-sm: 20px; --t-md: 15px; --lh-md: 21px; --t-lg: 17px; --lh-lg: 24px; font-size: var(--t-md); line-height: var(--lh-md); }
+.is-today .block { margin-top: 28px; } /* v10 (Oct 17): body 15, asks 16, labels 14, headings 17, cards 28 apart, nothing bold */
 .composer-wrap { margin-top: 24px; display: flex; flex-direction: column; }
 .composer-wrap .composer { order: 1; }
 .composer-wrap .chips { order: 2; }
@@ -461,6 +484,7 @@ details.block > summary:hover h2::after { border-color: var(--text); }
 .todo-acts button.go { background: var(--btn); color: var(--btn-text); }
 .todo-acts button.go:hover { background: var(--btn); color: var(--btn-text); opacity: .88; }
 .todo-acts .todo-rm:hover { color: var(--bad); }
+#todo .todo.leaving { opacity: 0; transition: opacity .25s; }
 li.leaving > .todo { opacity: 0; transform: translateX(8px); transition: opacity .18s, transform .18s; }
 @media (hover: hover) and (min-width: 700px) {
   .todo-acts { width: 196px; opacity: 0; pointer-events: none; transition: opacity .12s; }
@@ -512,11 +536,63 @@ li.leaving > .todo { opacity: 0; transform: translateX(8px); transition: opacity
 .proj .acts { grid-column: 1 / -1; display: none; gap: 8px; padding: 2px 0 4px; }
 .proj.open .acts { display: flex; }
 .proj.gone { display: flex; }
+/* Threads on Today (v10, Oct 17): two lines a row, the ask (or where it stands) then the thread small under it.
+   The whole row opens where the work lives; Later, Pause and Remove take the link's place on hover. */
+.thrs { display: flex; flex-direction: column; gap: 8px; }
+.thr { --btn: 32px; display: grid; grid-template-columns: minmax(0, 1fr) auto; column-gap: 12px; row-gap: 2px; padding: 14px 16px; border-radius: var(--r-md); background: var(--surface); color: var(--text); transition: background .15s; }
+.thrs .thr:hover { background: var(--hover-2); }
+.thr .tx { font-size: 16px; line-height: 22px; overflow-wrap: anywhere; }
+.thr .tn { grid-column: 1 / -1; font-size: var(--t-sm); line-height: var(--lh-sm); color: var(--text-3); }
+.thr .go { grid-row: 1; grid-column: 2; display: inline-flex; align-items: center; gap: 4px; height: 22px; font-size: var(--t-sm); color: var(--text-3); white-space: nowrap; font-variant-numeric: tabular-nums; }
+.thr:hover .go { color: var(--accent); }
+.thr .acts { display: none; grid-row: 1; grid-column: 2; margin: calc((22px - var(--btn)) / 2) -6px; }
+.ib { display: grid; place-items: center; width: var(--btn, 32px); height: var(--btn, 32px); padding: 0; border: 0; background: none; color: var(--text-3); cursor: pointer; }
+.ib:hover { color: var(--text); }
+@media (hover: hover) { .thr:hover .acts { display: flex; } .thr:hover .go { visibility: hidden; } }
+/* Drag a thread to reorder it or move it between the lists: the row you hold fades, a copy follows the pointer, a
+   blue bar marks where it lands, and an empty list lights up */
+.thr { -webkit-user-select: none; user-select: none; -webkit-user-drag: none; }
+.thr.dragging { opacity: .35; }
+.thr.ghost, .thr.quiet.ghost { opacity: .96; background: var(--surface-2); box-shadow: var(--shadow-pop); border-radius: var(--r-md); cursor: grabbing; }
+.drop-line { display: none; position: fixed; z-index: 59; height: 2px; border-radius: 1px; background: var(--accent); pointer-events: none; }
+/* Moving without me: the same two lines in one card, a step greyer */
+.thr.quiet { padding: 10px 12px; border-radius: var(--r-sm); background: none; }
+.thr.quiet + .thr.quiet { margin-top: 4px; }
+.thr.quiet:hover { background: var(--hover); }
+.thr.quiet .tx { color: var(--text-2); }
+/* Today on a wide screen: the main column and a rail on the right (today-client.js builds them) */
+@media (min-width: 1280px) {
+  .main[data-w="split"] { max-width: 1240px; display: grid; grid-template-columns: minmax(0, 1fr) 360px; column-gap: 48px; align-items: start; }
+  .main[data-w="split"] .split-rail { position: sticky; top: 64px; }
+  .main[data-w="split"] .split-rail > .block:first-child { margin-top: 0; }
+  /* Add a note at the top of the rail: one line, the send button inside it, like the phone's; no chips */
+  .split-rail .composer-wrap { margin-top: 0; }
+  .split-rail .composer { display: flex; align-items: flex-end; gap: 4px; box-shadow: none; background: var(--surface); border-radius: var(--r-md); padding: 6px 6px 6px 14px; }
+  .split-rail .composer textarea { flex: 1; min-width: 0; padding: 4px 0; font-size: var(--t-md); line-height: var(--lh-md); }
+  .split-rail .composer-row { margin-top: 0; }
+  .split-rail .composer-row .hint, .split-rail .chips { display: none !important; }
+  .split-rail .composer .tool, .split-rail .composer .send { width: 28px; height: 28px; }
+  .split-rail .composer-wrap + .block { margin-top: 28px; }
+  .split-rail .toast { min-height: 0; margin-top: 8px; }
+  .split-rail .toast:empty { display: none; }
+}
+.proj .sess { color: var(--text-2); }
+.proj .sess:hover { color: var(--text); text-decoration: underline; text-decoration-color: var(--line-2); text-underline-offset: 3px; }
+/* Live on Today: the local servers running on the Mac, each one tap to open */
+.live-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 10px 12px; border-radius: var(--r-sm); color: var(--text); }
+.live-row:hover { background: var(--hover-2); }
+.live-row .ln { display: flex; flex-direction: column; min-width: 0; }
+.live-row .ln span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.live-row small { font-size: var(--t-sm); line-height: var(--lh-sm); color: var(--text-3); }
+.live-row .port { flex: none; font-size: var(--t-sm); color: var(--text-3); font-variant-numeric: tabular-nums; }
+.live-row:hover .port { color: var(--accent); }
 @media (max-width: 759px) {
   .proj { align-items: start; }
   .proj img.mark { margin-top: 1px; }
   .proj .t { flex-direction: column; gap: 1px; }
   .proj .t span { white-space: normal; display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; }
+  .proj.open-row .t { grid-template-columns: minmax(0, 1fr); }
+  .proj .sess, #live { display: none; } /* claude:// and localhost links only open on the Mac */
 }
 
 /* the receipt: what came in, and where it went */
@@ -554,11 +630,21 @@ html[data-mode="light"] .night-only, html:not([data-mode="light"]) .day-only:has
 .pmedia video, .pmedia img, .phero video, .phero img { position: absolute; inset: 0; width: 100%; height: 100%; object-fit: cover; display: block; transform: scale(var(--z, 1)); transition: transform .5s cubic-bezier(.2,.8,.2,1); }
 .pmedia:hover video, .pmedia:hover img { transform: scale(calc(var(--z, 1) * 1.015)); }
 /* A live site, drawn at a computer's width and scaled to fit the tile. Looked at, never clicked. */
-.site { position: absolute; inset: 0; overflow: hidden; background: var(--surface); }
-.site iframe { position: absolute; left: 0; top: 0; width: 1440px; height: 900px; border: 0; transform-origin: 0 0; transform: scale(var(--s, .3)); pointer-events: none; background: transparent; }
+:is(.pmedia, .phero) .site { position: absolute; inset: 0; overflow: hidden; background: var(--surface); }
+:is(.pmedia, .phero) .site iframe { position: absolute; left: 0; top: 0; width: 1440px; height: 900px; border: 0; transform-origin: 0 0; transform: scale(var(--s, .3)); pointer-events: none; background: transparent; }
 /* No picture yet: the name, set large, so the grid still reads as work. */
-.name { position: absolute; inset: 0; display: flex; align-items: flex-end; padding: 20px; background: linear-gradient(160deg, var(--surface-2), var(--surface)); }
-.name span { font-size: clamp(20px, 2vw, 28px); line-height: 1.1; font-weight: var(--w-medium); letter-spacing: -0.03em; color: var(--text-2); text-wrap: balance; }
+:is(.pmedia, .phero) .name { position: absolute; inset: 0; display: flex; align-items: flex-end; padding: 20px; background: linear-gradient(160deg, var(--surface-2), var(--surface)); }
+:is(.pmedia, .phero) .name span { font-size: clamp(20px, 2vw, 28px); line-height: 1.1; font-weight: var(--w-medium); letter-spacing: -0.03em; color: var(--text-2); text-wrap: balance; }
+.ptile { position: relative; }
+.pmedia .name { justify-content: space-between; gap: 16px; transition: background .2s; }
+.pmedia .name .pdate { flex: none; font-size: var(--t-sm); line-height: var(--lh-sm); font-weight: var(--w-regular); letter-spacing: 0; color: var(--text-3); font-variant-numeric: tabular-nums; }
+.pmedia:hover .name > span:first-child { color: var(--text); }
+.pnote { position: absolute; top: 16px; right: 20px; font-size: var(--t-sm); color: var(--text-3); opacity: 0; transition: opacity .14s; }
+.ptile:hover .pnote, .pnote:focus-visible { opacity: 1; }
+.pnote:hover { color: var(--text); }
+.saved-h { margin: 48px 0 12px; font-size: var(--t-sm); line-height: var(--lh-sm); font-weight: var(--w-regular); color: var(--text-3); }
+.saved-h:first-of-type { margin-top: 0; }
+@media (hover: none) { .pnote { opacity: 1; } }
 .pcap { display: flex; justify-content: space-between; align-items: baseline; gap: 12px; padding: 0 2px; font-size: var(--t-md); }
 .ptitle { font-weight: var(--w-medium); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .ptitle .arrow { color: var(--text-3); font-size: var(--t-sm); }
@@ -585,6 +671,10 @@ html[data-mode="light"] .night-only, html:not([data-mode="light"]) .day-only:has
 img.doc-mark { width: 40px; height: 40px; border-radius: var(--r-sm); margin-bottom: 16px; }
 .doc .prose { margin-top: 24px; }
 .doc-links { margin-top: 48px; }
+.doc-links.doc-parts { margin: 32px 0 40px; }
+.rows li.sub .row { padding-left: 32px; }
+.rows li.sub .row .t b { font-weight: var(--w-regular); color: var(--text-2); }
+@media (max-width: 599px) { .ptile .pmedia { aspect-ratio: 16 / 7; } }
 .paths { display: flex; flex-direction: column; gap: 4px; margin-top: 12px; font-size: var(--t-sm); line-height: var(--lh-sm); color: var(--text-3); }
 .paths a:hover { color: var(--text); }
 .paths .missing { color: var(--accent); }
@@ -648,7 +738,7 @@ img.doc-mark { width: 40px; height: 40px; border-radius: var(--r-sm); margin-bot
 @media (max-width: 860px) { .gal { column-count: 2; } }
 @media (max-width: 480px) { .gal { column-count: 1; } }
 .tile { position: relative; display: block; break-inside: avoid; margin: 0 0 16px; background: var(--surface); border-radius: var(--r-md); overflow: hidden; }
-.tile .shot { position: relative; display: block; background: var(--hover); }
+.tile .shot { position: relative; display: grid; align-items: center; min-height: 72px; background: var(--hover); }
 .tile img, .tile video, .tile .blank { display: block; width: 100%; height: auto; }
 .tile .blank { aspect-ratio: 4 / 3; }
 .tile.tall img { max-height: 460px; object-fit: cover; object-position: top; }
@@ -656,9 +746,10 @@ img.doc-mark { width: 40px; height: 40px; border-radius: var(--r-sm); margin-bot
 .tile .cap { padding: 12px; display: flex; flex-direction: column; gap: 2px; }
 .tile .line { display: flex; align-items: baseline; gap: 8px; }
 .tile .said { color: var(--text); font-weight: var(--w-medium); min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
-.tile .rm { flex: none; margin-left: auto; width: 24px; height: 24px; border-radius: var(--r-xs); color: var(--text-3); font-size: var(--t-lg); line-height: var(--lh-md); opacity: 0; transition: opacity .14s; }
+.tile .rm { position: absolute; top: 8px; right: 8px; width: 28px; height: 28px; display: grid; place-items: center; padding: 0; border: 0; border-radius: 50%; color: #fff; background: rgb(0 0 0 / .5); backdrop-filter: blur(8px); -webkit-backdrop-filter: blur(8px); opacity: 0; transition: opacity .14s, background .14s; }
+.tile .rm svg { width: 12px; height: 12px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; }
 .tile:hover .rm, .tile .rm:focus-visible { opacity: 1; }
-.tile .rm:hover { color: var(--text); background: var(--hover-2); }
+.tile .rm:hover { background: rgb(0 0 0 / .72); }
 .tile .from { display: flex; justify-content: space-between; gap: 8px; font-size: var(--t-sm); color: var(--text-3); }
 .tile .from .who { display: flex; min-width: 0; }
 .tile .from .site { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; min-width: 0; color: var(--text-2); }
@@ -691,17 +782,6 @@ img.doc-mark { width: 40px; height: 40px; border-radius: var(--r-sm); margin-bot
 .rc-head a { color: var(--text-3); font-weight: var(--w-body); font-size: var(--t-sm); }
 .rc-head a:hover { color: var(--text); }
 .rc .lands { max-height: 60vh; overflow-y: auto; padding: 4px; }
-.panel { position: fixed; left: 50%; bottom: 24px; transform: translateX(-50%); z-index: 70; width: min(320px, calc(100vw - 32px)); display: none; background: var(--surface-2); border-radius: var(--r-md); box-shadow: var(--shadow-pop); padding: 16px; }
-.panel.open { display: block; }
-.panel h6 { margin: 0 0 12px; font-size: var(--t-md); font-weight: var(--w-medium); }
-.field { margin-bottom: 10px; }
-.field label { display: block; margin-bottom: 4px; color: var(--text-3); font-size: var(--t-sm); line-height: var(--lh-sm); }
-.field .seg { flex-wrap: nowrap; gap: 2px; padding: 2px; background: var(--hover); border-radius: var(--r-sm); }
-.field .seg button { flex: 1; height: 28px; padding: 0 4px; justify-content: center; border: 0; border-radius: calc(var(--r-sm) - 2px); font-size: var(--t-sm); }
-.field .seg button[aria-pressed="true"] { background: var(--surface-2); color: var(--text); box-shadow: 0 1px 2px rgba(15,15,15,.07); }
-html:not([data-mode="light"]) .field .seg button[aria-pressed="true"] { background: color-mix(in srgb, var(--text) 12%, var(--surface-2)); }
-.panel .reset { width: 100%; height: 28px; margin-top: 4px; border-radius: var(--r-sm); color: var(--text-2); font-size: var(--t-md); }
-.panel .reset:hover { color: var(--text); background: var(--hover); }
 
 /* Ideas: one line each in the same card as every other list; choices take the group's place on hover. */
 .ideas { list-style: none; margin: 0; padding: 0; }

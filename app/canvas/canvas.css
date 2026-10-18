@@ -14,7 +14,7 @@
      size sets its line too (--t-md with --lh-md). Code is --t-ui (12) on --lh-md, so a line of code is as tall as a
      line of text. */
   --cv-s-block: 40px;  /* above a shape, as above a figure on benji.org */
-  /* Padding: the same on every side (Eric's rule), and only these. A card's content sits 20px in; a small box (an
+  /* Padding: the same on every side, and only these. A card's content sits 20px in; a small box (an
      aside, a node, a card of text) 12px; a row or cell 8px. A highlighted row sits 4px inside its card. */
   --cv-pad-card: 20px;
   --cv-pad-box: 12px;
@@ -32,6 +32,10 @@
   --cv-dot-lg: 10px;   /* a one-day mark, a matrix point, legend swatches */
   --cv-bar: 16px;      /* a bar's thickness */
   --cv-bar-track: 24px;/* the row a bar sits in, a chart's tick row */
+  --cv-car-h: 480px;   /* how tall a carousel's pictures stand, at least: a slide is never under half the track */
+  --cv-pic-max: min(80vh, 760px);  /* the tallest a picture shows on the page; tap it for all of it */
+  --cv-map-h: 360px;   /* how tall a map stands */
+  --cv-tile: 256px;    /* a map tile, the web's standard size */
 
   /* Radius. A card is md. Anything rounded inside a card hugs it concentrically: inner = outer minus the gap, never
      under xs. Inside a card's 20px padding that's xs; a highlight 4px in is md minus 4, which is sm. */
@@ -45,10 +49,10 @@
   --cv-dim: color-mix(in srgb, var(--bg) 62%, transparent);
   --cv-ease: cubic-bezier(.2, .7, .2, 1);
 
-  /* One width: text and every shape share one column. `wide` and `xwide` stay as names for old
-     pages and land on the same column; raise --cv-wide-step to bring a wider track back. */
+  /* Two widths: text reads at 640; pictures and diagrams take the wide track, 960, so a screen on the
+     page is big enough to read. `xwide` lands on the wide track too. Under 900 everything shares one column. */
   --cv-measure: 640px;
-  --cv-wide-step: 0px;
+  --cv-wide-step: 160px;
   --cv-gutter: 20px;
 
   max-width: none;
@@ -94,7 +98,8 @@
 .frame.cv > .sw { justify-self: end; margin-right: calc(-1 * var(--s2)); background: none; border: 0; padding: 0; cursor: pointer; }
 /* The section rail sits just left of the text, left-aligned, no line: grey sections, the one you're in in ink.
    Wide figures pass under it, so it steps aside (canvas.js sets is-covered) while one does. */
-.frame.cv .rail { --rail-w: 184px; left: calc(50% - var(--cv-measure) / 2 - var(--s8) - var(--rail-w)); width: var(--rail-w); top: calc(var(--s9) + var(--s2)); gap: 0; text-align: left; transition: opacity .2s; }
+/* The section rail sits right of the text: the vault's sidebar already holds the left. */
+.frame.cv .rail { --rail-w: 184px; left: calc(50% + var(--cv-measure) / 2 + var(--s8)); width: var(--rail-w); top: calc(var(--s9) + var(--s2)); gap: 0; text-align: left; transition: opacity .2s; }
 /* Like a note's rail in the reader: "On this page", then the sections on a thin track, the one you're in marked in
    ink. The way back sits above it once the page's own back link has scrolled away. */
 .frame.cv .rail::before { content: "On this page"; order: -1; margin-bottom: var(--s2); font-size: var(--t-sm); line-height: var(--lh-sm); color: var(--text-3); }
@@ -126,7 +131,10 @@
 .cv a:hover { text-decoration-color: currentColor; }
 .cv .up, .cv .sw, .cv .rail a { text-decoration: none; }
 /* A chip is one step shorter than the line it sits in, so two chips on lines one above the other never touch. */
-.cv-k { display: inline-block; padding: 0 var(--s1); line-height: calc(1lh - var(--s1)); border-radius: var(--r-xs); background: var(--fill); white-space: nowrap; color: var(--text); }
+/* A name in a sentence: 2px above and below, 6px each side, and as tall as the line so rows never shift. */
+/* Air above and below the name, not beside it: 4 on the sides, the text a step smaller than the line it sits in,
+   and the chip 2px taller than the line, pulled back 1px top and bottom so the line spacing never moves. */
+.cv-k { display: inline-block; padding: var(--s0) var(--s1); font-size: var(--t-sm); line-height: calc(1lh - var(--s0)); margin-block: calc(var(--s0) / -2); border-radius: var(--r-xs); background: var(--fill); white-space: nowrap; color: var(--text); }
 /* A name sitting on the soft blue takes the blue, not grey. */
 :is(.cv-table tr.is-key, .cv-compare .is-picked, .cv-f-node.is-key, .cv-tm-t.is-key, .cv-c-ev.is-key, .cv-node.is-new, .cv-node.is-key) .cv-k { background: color-mix(in oklch, var(--accent) 14%, transparent); color: var(--accent-ink); }
 .cv-h2 { margin: var(--s8) 0 0; font-size: var(--t-lg); line-height: var(--lh-lg); font-weight: var(--w-medium); letter-spacing: var(--tr-snug); color: var(--text); text-wrap: balance; scroll-margin-top: var(--s6); }
@@ -137,6 +145,9 @@
 .cv-quote cite { display: block; margin-top: var(--s3); font-size: var(--t-sm); line-height: var(--lh-sm); font-style: normal; letter-spacing: 0; color: var(--text-3); }
 .cv-aside { margin: var(--s6) 0 0; padding: var(--cv-pad-box); border-radius: var(--r-md); background: var(--surface); font-size: var(--t-sm); line-height: var(--lh-sm); color: var(--text-2); }
 .cv-aside b { display: block; margin-bottom: var(--s1); font-weight: var(--w-medium); color: var(--text); }
+/* A callout: the aside with a tone, marked by a status dot before its title. No tint: red mixed into grey reads pink, and pink is retired. */
+.cv-aside:is(.is-good, .is-warn) b::before { content: ""; display: inline-block; width: var(--cv-dot); height: var(--cv-dot); margin-right: var(--s2); border-radius: 50%; background: var(--ok); vertical-align: 1px; }
+.cv-aside.is-warn b::before { background: var(--bad); }
 
 /* Every block that isn't running text takes the same room around it. */
 .cv-block { margin: var(--cv-s-block) 0 0; }
@@ -153,7 +164,7 @@
 :root[data-mode="light"] .cv .cv-dark { display: none !important; }
 /* A tall picture (a phone, a portrait clip) stops at 640px and sits centred, instead of running a screen and a half. */
 .cv-fig { display: grid; place-items: center; overflow: hidden; border-radius: var(--r-md); background: var(--surface); }
-.cv-fig img, .cv-fig video { display: block; width: auto; max-width: 100%; height: auto; max-height: 560px; }
+.cv-fig img, .cv-fig video { display: block; width: auto; max-width: 100%; height: auto; max-height: var(--cv-pic-max); }
 /* Tall pictures sit centred on the card, so the figure keeps the column's width like everything else. */
 
 /* ---------- before / after ---------- */
@@ -261,7 +272,8 @@
    spine and an elbow draw as one line where they meet. */
 .cv-tree ul ul > li::before { content: ""; position: absolute; left: calc(-1 * var(--s4)); top: 0; width: var(--s4); height: calc(var(--s3) + var(--lh-sm) / 2 + var(--cv-pad-cell));  /* down to the middle of the child's node */ border-left: 2px solid var(--wire); border-bottom: 2px solid var(--wire); border-bottom-left-radius: var(--r-sm); }
 .cv-tree ul ul > li:not(:last-child)::after { content: ""; position: absolute; left: calc(-1 * var(--s4)); top: 0; bottom: 0; border-left: 2px solid var(--wire); }
-.cv-node { display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0 var(--s2); max-width: 100%; padding: var(--cv-pad-cell); border-radius: var(--r-sm); background: var(--raised); font-size: var(--t-sm); line-height: var(--lh-sm); color: var(--text); }
+/* Positioned so a node, and its ring, paints over the end of the connector that runs into it. */
+.cv-node { position: relative; display: inline-flex; flex-wrap: wrap; align-items: center; gap: 0 var(--s2); max-width: 100%; padding: var(--cv-pad-cell); border-radius: var(--r-sm); background: var(--raised); font-size: var(--t-sm); line-height: var(--lh-sm); color: var(--text); }
 .cv-node .note { color: var(--text-3); }
 .cv-node .m { padding: 0 var(--s2); border-radius: var(--r-pill); background: var(--fill); color: var(--text-2); font-size: var(--t-xs); line-height: var(--lh-xs); }
 .cv-node.is-new { background: var(--accent-soft); }
@@ -323,8 +335,134 @@
 .cv-var-note { margin-top: var(--s0); font-size: var(--t-sm); line-height: var(--lh-sm); color: var(--text-2); }
 @media (max-width: 640px) {
   .cv-vars { grid-template-columns: repeat(min(var(--cols), 2), minmax(0, 1fr)); gap: var(--s5) var(--s3); }
+  .cv-vars:not(.is-text) { grid-template-columns: minmax(0, 1fr); }  /* pictures one to a row on a phone */
   .cv-vars.is-text { grid-template-columns: minmax(0, 1fr); gap: var(--s2); }
 }
+
+/* ---------- cards: things worth opening ---------- */
+.cv-cards { display: grid; grid-template-columns: repeat(var(--cols), minmax(0, 1fr)); gap: var(--s2); }
+.frame.cv a.cv-card, .cv-card { display: flex; flex-direction: column; min-width: 0; padding: var(--cv-pad-inset); border-radius: var(--r-md); background: var(--surface); color: inherit; text-decoration: none; transition: background .15s; }
+a.cv-card:hover { background: color-mix(in srgb, var(--text) 6%, var(--surface)); }
+a.cv-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.cv-card-pic { aspect-ratio: var(--ratio); overflow: hidden; border-radius: var(--cv-r-in-inset); background: var(--raised); }
+.cv-card-pic img, .cv-card-pic video { display: block; width: 100%; height: 100%; object-fit: cover; }
+.cv-card-body { display: flex; flex-direction: column; flex: 1; padding: var(--cv-pad-cell); }
+.cv-card-title { display: flex; align-items: baseline; gap: var(--s1); font-size: var(--t-md); line-height: var(--lh-md); font-weight: var(--w-medium); color: var(--text); }
+.cv-card-title svg { flex: none; width: var(--cv-icon); height: var(--cv-icon); align-self: center; margin-left: auto; fill: none; stroke: var(--text-3); stroke-width: 1.4; stroke-linecap: round; stroke-linejoin: round; }
+.cv-card.is-key .cv-card-title { color: var(--accent-ink); }
+.cv-card-text { margin-top: var(--s0); font-size: var(--t-sm); line-height: var(--lh-sm); color: var(--text-2); text-wrap: pretty; }
+.cv-card-foot { display: flex; flex-wrap: wrap; gap: 0 var(--s2); margin-top: auto; padding-top: var(--s2); font-size: var(--t-sm); line-height: var(--lh-sm); color: var(--text-3); }
+.cv-card-foot .kind { color: var(--text-2); }
+@media (max-width: 640px) { .cv-cards { grid-template-columns: minmax(0, 1fr); } }
+
+/* ---------- carousel: screens one after another, swiped or stepped ---------- */
+.cv-car-track { display: flex; gap: var(--s3); overflow-x: auto; scroll-snap-type: x mandatory; overscroll-behavior-x: contain; scrollbar-width: none; border-radius: var(--r-md); }
+.cv-car-track::-webkit-scrollbar { display: none; }
+.cv-car-track:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.cv-car-slide { flex: none; width: min(100%, max(calc((100% - var(--s3)) / 2), calc(var(--cv-car-h) * var(--r)))); scroll-snap-align: start; }
+/* A screen sits 4px inside a card, so a page shot on a page still reads as a thing, day and night. */
+.cv-car-pic { padding: var(--cv-pad-inset); border-radius: var(--r-md); background: var(--surface); }
+.cv-car-pic img, .cv-car-pic video { display: block; width: 100%; height: auto; max-height: var(--cv-pic-max); aspect-ratio: var(--ar); object-fit: cover; object-position: top; border-radius: var(--cv-r-in-inset); }
+.cv-car-label { margin-top: var(--s2); font-size: var(--t-sm); line-height: var(--lh-sm); font-weight: var(--w-medium); color: var(--text); }
+.cv-car-note { margin-top: var(--s0); font-size: var(--t-sm); line-height: var(--lh-sm); color: var(--text-2); text-wrap: pretty; }
+.cv-car-bar { display: flex; justify-content: center; margin-top: var(--s4); }
+.cv-car-ctl { display: inline-flex; align-items: center; gap: var(--s1); padding: var(--s1); border-radius: var(--r-pill); background: var(--surface); }
+.cv-car-ctl button { display: grid; place-items: center; width: var(--cv-ctl-sm); height: var(--cv-ctl-sm); padding: 0; border: 0; border-radius: 50%; background: var(--raised); color: var(--text); cursor: pointer; transition: background .15s, opacity .15s; }
+.cv-car-ctl button:hover:not(:disabled) { background: var(--fill); }
+.cv-car-ctl button:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.cv-car-ctl button:disabled { opacity: .4; cursor: default; }
+.cv-car-ctl svg { width: var(--cv-icon); height: var(--cv-icon); fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; }
+.cv-car-ctl .n { min-width: 4.5em; padding: 0 var(--s1); text-align: center; font-size: var(--t-sm); line-height: var(--lh-sm); font-variant-numeric: tabular-nums; color: var(--text-2); }
+@media (max-width: 640px) { .frame.cv { --cv-car-h: 400px; --cv-map-h: 280px; } }
+
+/* ---------- sheet: a table edited on the page ---------- */
+.cv-table.cv-sheet-box td { padding: 0; vertical-align: middle; }
+.cv-table.cv-sheet-box td:first-child { font-weight: var(--w-body); }
+.cv-sheet-box :is(input[type="text"], input[type="number"], select) { display: block; width: 100%; min-width: 6em; height: var(--cv-ctl); padding: 0 var(--cv-pad-cell); border: 0; border-radius: var(--cv-r-in-inset); background: none; font: inherit; color: var(--text); }
+.cv-sheet-box td:first-child input { font-weight: var(--w-medium); }
+.cv-sheet-box td.r input { text-align: right; }
+.cv-sheet-box select { appearance: none; cursor: pointer; }
+.cv-sheet-box :is(input, select):hover { background: var(--fill); }
+.cv-sheet-box :is(input, select):focus { outline: none; background: var(--fill); box-shadow: inset 0 0 0 2px var(--accent); }
+.cv-sheet-box td.k-check { width: var(--cv-ctl); text-align: center; }
+.cv-sheet-box input[type="checkbox"] { width: var(--cv-icon); height: var(--cv-icon); margin: 0; accent-color: var(--accent); cursor: pointer; vertical-align: middle; }
+.cv-sheet-box :is(th, td).x { width: var(--cv-ctl); padding: 0; }
+.cv-sheet-rm { display: grid; place-items: center; width: var(--cv-ctl-sm); height: var(--cv-ctl-sm); margin: 0 auto; padding: 0; border: 0; border-radius: 50%; background: none; color: var(--text-3); cursor: pointer; opacity: .6; transition: opacity .15s, background .15s; }
+.cv-sheet-box tr:hover .cv-sheet-rm, .cv-sheet-rm:focus-visible { opacity: 1; }
+.cv-sheet-rm:hover { background: var(--fill); color: var(--text); }
+.cv-sheet-rm svg, .cv-lb-x svg { width: var(--cv-icon); height: var(--cv-icon); fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; }
+.cv-table.cv-sheet-box tfoot td { padding: var(--cv-pad-cell); font-weight: var(--w-medium); color: var(--text); }
+.cv-sheet-box tfoot td:first-child { color: var(--text-2); }
+.cv-sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); }
+.cv-sheet-bar { display: flex; align-items: center; gap: var(--s3); margin-top: var(--s2); }
+.cv-sheet-bar .cv-ask-status { margin: 0; }
+.cv-sheet-add { height: var(--cv-ctl); padding: 0 var(--cv-pad-box); border: 0; border-radius: var(--r-pill); background: var(--surface); font: inherit; font-size: var(--t-sm); color: var(--text); cursor: pointer; transition: background .15s; }
+.cv-sheet-add:hover { background: var(--fill); }
+.cv-sheet-add:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---------- gallery: a wall of pictures, each opening large ---------- */
+.cv-gal-grid { columns: var(--cols); column-gap: var(--s2); }
+.cv-gal-item { display: block; width: 100%; margin: 0 0 var(--s2); padding: 0; border: 0; border-radius: var(--r-md); overflow: hidden; background: var(--surface); break-inside: avoid; cursor: zoom-in; }
+.cv-gal-item img, .cv-gal-item video { display: block; width: 100%; height: auto; transition: opacity .15s; }
+.cv-gal-item:hover img { opacity: .88; }
+.cv-gal-item:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+@media (max-width: 640px) { .cv-gal-grid { columns: 1; } }
+.cv-lb { width: 100vw; max-width: none; height: 100dvh; max-height: none; margin: 0; padding: var(--s5); border: 0; background: none; color: var(--text); }
+.cv-lb[open] { display: grid; grid-template-rows: minmax(0, 1fr) auto auto; gap: var(--s3); justify-items: center; }
+.cv-lb::backdrop { background: var(--bg); }
+/* the picture is held to its own row, so the caption and the controls always sit under it, never on it */
+.cv-lb-pic { position: relative; min-height: 0; width: 100%; }
+.cv-lb-pic :is(img, video) { position: absolute; inset: 0; margin: auto; max-width: 100%; max-height: 100%; width: auto; height: auto; object-fit: contain; border-radius: var(--r-md); }
+.cv-lb-cap { text-align: center; font-size: var(--t-sm); line-height: var(--lh-sm); color: var(--text-2); }
+.cv-lb-cap b { display: block; font-weight: var(--w-medium); color: var(--text); }
+.cv-lb-cap b:empty { display: none; }
+.cv-lb-bar { display: flex; align-items: center; gap: var(--s2); }
+.cv-lb-x { display: grid; place-items: center; width: calc(var(--cv-ctl-sm) + 2 * var(--s1)); height: calc(var(--cv-ctl-sm) + 2 * var(--s1)); padding: 0; border: 0; border-radius: 50%; background: var(--surface); color: var(--text); cursor: pointer; }
+.cv-lb-x:hover { background: var(--fill); }
+.cv-lb :is(button):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+
+/* ---------- map: places on a real map, numbered, with the list under it ---------- */
+.cv-map-box { position: relative; height: var(--cv-map-h); overflow: hidden; border-radius: var(--r-md); background: var(--surface); cursor: grab; touch-action: pan-y; user-select: none; }
+.cv-map-box.is-drag { cursor: grabbing; }
+.cv-map-tiles img { position: absolute; top: 0; left: 0; width: var(--cv-tile); height: var(--cv-tile); max-width: none; pointer-events: none; }
+.cv-map-pins { position: absolute; inset: 0; pointer-events: none; }
+.cv-map-pin { position: absolute; top: calc(var(--cv-num) / -2); left: calc(var(--cv-num) / -2); display: grid; place-items: center; width: var(--cv-num); height: var(--cv-num); border-radius: 50%; background: var(--text); color: var(--bg); font-size: var(--t-xs); font-weight: var(--w-medium); box-shadow: 0 0 0 2px var(--bg); transition: transform .15s; }
+.cv-map-pin.is-key { background: var(--accent); color: var(--on-accent); }
+.cv-map-pin.is-hot { background: var(--accent); color: var(--on-accent); z-index: 1; }
+.cv-map-bar { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); margin-top: var(--s2); }
+.cv-map-bar .cv-zoom { position: static; background: var(--surface); }
+.cv-map-credit { font-size: var(--t-xs); line-height: var(--lh-xs); color: var(--text-3); }
+.cv-map-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(240px, 1fr)); gap: var(--s1) var(--s4); margin: var(--s3) 0 0; padding: 0; list-style: none; }
+.cv-map-list li { display: grid; grid-template-columns: var(--cv-num) minmax(0, 1fr); gap: var(--s3); padding: var(--cv-pad-cell); border-radius: var(--cv-r-in-inset); transition: background .15s; }
+.cv-map-list li.is-hot { background: var(--surface); }
+.cv-map-num { display: grid; place-items: center; width: var(--cv-num); height: var(--cv-num); border-radius: 50%; background: var(--fill); color: var(--text); font-size: var(--t-xs); font-weight: var(--w-medium); }
+.cv-map-list li.is-key .cv-map-num { background: var(--accent); color: var(--on-accent); }
+.cv-map-list a { font-size: var(--t-md); line-height: var(--lh-md); font-weight: var(--w-medium); color: var(--text); }
+.cv-map-list .d { display: flex; flex-wrap: wrap; gap: 0 var(--s2); font-size: var(--t-sm); line-height: var(--lh-sm); color: var(--text-3); }
+.cv-map-list .d .kind { color: var(--text-2); }
+.cv-map-list .note { margin-top: var(--s0); font-size: var(--t-sm); line-height: var(--lh-sm); color: var(--text-2); }
+
+/* ---------- ask: questions answered on the page, saved to the vault ---------- */
+.cv-ask-card { display: flex; flex-direction: column; gap: var(--s5); padding: var(--cv-pad-card); border-radius: var(--r-md); background: var(--surface); }
+.cv-q-label { font-size: var(--t-md); line-height: var(--lh-md); font-weight: var(--w-medium); color: var(--text); }
+.cv-q-note { margin-top: var(--s0); font-size: var(--t-sm); line-height: var(--lh-sm); color: var(--text-3); }
+.cv-opts { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: var(--s2); margin-top: var(--s2); }
+.cv-opt { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s0); padding: var(--cv-pad-box); border: 0; border-radius: var(--cv-r-in-card); background: var(--raised); font: inherit; text-align: left; color: var(--text); cursor: pointer; transition: background .15s, box-shadow .15s; }
+.cv-opt:hover { background: color-mix(in srgb, var(--text) 8%, var(--raised)); }
+.cv-opt:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.cv-opt[aria-pressed="true"] { background: var(--accent-soft); box-shadow: 0 0 0 2px var(--accent); }
+.cv-opt .l { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s1) var(--s2); font-size: var(--t-md); line-height: var(--lh-md); font-weight: var(--w-medium); }
+.cv-opt[aria-pressed="true"] .l { color: var(--accent-ink); }
+.cv-opt .d { font-size: var(--t-sm); line-height: var(--lh-sm); color: var(--text-2); text-wrap: pretty; }
+.cv-opt .rec { display: inline-block; padding: 0 var(--s2); border-radius: var(--r-pill); background: var(--fill); color: var(--text-2); font-size: var(--t-xs); line-height: var(--cv-badge); font-weight: var(--w-medium); }
+.cv-scale { display: flex; align-items: center; gap: var(--s3); margin-top: var(--s2); }
+.cv-scale input { flex: 1; accent-color: var(--accent); }
+.cv-scale output { min-width: 6em; text-align: right; font-size: var(--t-md); line-height: var(--lh-md); font-variant-numeric: tabular-nums; color: var(--text); }
+.cv-ask-text { display: block; width: 100%; margin-top: var(--s2); padding: var(--s2); border: 0; border-radius: var(--cv-r-in-card); background: var(--raised); font: inherit; font-size: var(--t-md); line-height: var(--lh-md); color: var(--text); resize: vertical; }
+.cv-ask-text:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+.cv-ask-status:empty { display: none; }
+.cv-ask-status { margin-top: calc(var(--s3) * -1); font-size: var(--t-sm); line-height: var(--lh-sm); color: var(--text-3); }
+@media (max-width: 640px) { .cv-ask-card { padding: var(--s4); } .cv-opts { grid-template-columns: minmax(0, 1fr); } }
 
 /* ---------- flow: states joined by arrows ----------
    Boxes are placed on a grid by canvas.js (column = rank, row = order); the arrows are one SVG laid over them. */
@@ -512,7 +650,7 @@
 .cv-spark i { position: absolute; width: var(--cv-dot-sm); height: var(--cv-dot-sm); margin: calc(var(--cv-dot-sm) / -2) 0 0 calc(var(--cv-dot-sm) / -2); border-radius: 50%; background: var(--text-3); }
 .cv-stat.is-key .cv-spark i { background: var(--accent); }
 
-/* ---------- code: the canvas's one use of mono (Eric's call, Oct 12) ----------
+/* ---------- code: the canvas's one use of mono ----------
    Geist Mono, self-hosted with the vault's fonts. Lines don't wrap; the block scrolls sideways inside its card. */
 .cv-code { border-radius: var(--r-md); background: var(--surface); overflow: hidden; }
 .cv-code-bar { display: flex; align-items: center; justify-content: space-between; gap: var(--s3); padding: var(--s2) var(--s2) 0 var(--s4); font-size: var(--t-sm); line-height: var(--lh-sm); color: var(--text-3); }
@@ -695,4 +833,28 @@
 
 @media (prefers-reduced-motion: reduce) {
   .cv-side, .cv-pin, .cv-lens, .cv-dim, .cv-notes ol, .cv-seg .cv-thumb, .cv-stage.is-blocks { transition: none !important; filter: none !important; transform: none !important; }
+}
+
+/* ---------- pictures: open large, crop, edge to edge on a phone ---------- */
+/* Anything that opens large says so. */
+:is(.cv-fig, .cv-var-pic, .cv-car-pic)[data-large] { cursor: zoom-in; }
+:is(.cv-fig, .cv-var-pic, .cv-car-pic)[data-large]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+:is(.cv-var-pic, .cv-car-pic)[data-large]:hover :is(img, video) { opacity: .92; }
+
+/* A crop shows only the part the point is about: the box takes the crop's shape and the picture moves inside it. */
+.cv-crop { position: relative; display: block; width: 100%; overflow: hidden; border-radius: inherit; }
+.frame.cv .cv-crop > :is(img, video) { position: absolute; left: calc(-100% * var(--cx) / var(--cw)); top: calc(-100% * var(--cy) / var(--ch));
+  width: calc(100% * 100 / var(--cw)); height: calc(100% * 100 / var(--ch)); max-width: none; max-height: none; aspect-ratio: auto; object-fit: fill; border-radius: 0; }
+:is(.cv-var-pic, .cv-card-pic):has(> .cv-crop) { aspect-ratio: auto; }
+.cv-car-pic .cv-crop { border-radius: var(--cv-r-in-inset); }
+
+/* A phone: pictures run edge to edge, their title, notes and caption keep the margin. */
+@media (max-width: 640px) {
+  .cv-car-slide { width: 100%; }
+  .frame.cv > .cv-bleed { grid-column: full; }
+  .frame.cv > .cv-bleed > :is(.cv-s-title, .cv-ba-bar, .cv-notes, .cv-cap, .cv-car-bar) { margin-inline: var(--cv-gutter); }
+  .frame.cv > .cv-bleed :is(.cv-fig, .cv-stage, .cv-gal-item, .cv-var-pic) { border-radius: 0; }
+  .frame.cv > .cv-bleed .cv-gal-grid { column-gap: 0; }
+  .frame.cv > .cv-bleed :is(.cv-var-label, .cv-var-note) { margin-inline: var(--cv-gutter); }
+  .frame.cv > .cv-bleed .cv-car-track { padding-inline: var(--cv-gutter); scroll-padding-inline: var(--cv-gutter); border-radius: 0; }
 }

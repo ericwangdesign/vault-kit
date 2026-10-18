@@ -26,6 +26,8 @@
   // A picture of a UI that has a light mode takes `srcLight` too; the page shows the one that matches day or night.
   // A src ending in .mp4 or .webm is motion: a silent loop, paused for people who ask for less motion.
   function pic(s, alt, w, h, extra) {
+    var c = crop(s, w, h);
+    if (c) return '<span class="cv-crop" style="aspect-ratio:' + c.ar + ';--cx:' + c.x + ';--cy:' + c.y + ';--cw:' + c.w + ';--ch:' + c.h + '">' + pic(Object.assign({}, s, { crop: null }), alt, w, h, extra) + '</span>';
     var one = function (src, cls) {
       var size = w ? ' width="' + w + '" height="' + h + '"' : '', c = cls ? ' class="' + cls + '"' : '';
       return isVideo(src)
@@ -34,6 +36,15 @@
     };
     return s.srcLight ? one(s.src, 'cv-dark') + one(s.srcLight, 'cv-light') : one(s.src);
   }
+  // `crop`: { x, y, w, h } in percent of the picture, the part the point is about. Needs the picture's `w` and `h`.
+  // Not on a picture with pins: the pins are placed on the whole picture.
+  function crop(s, w, h) {
+    var c = s && s.crop;
+    if (!c || s.pins || !(w = s.w || w) || !(h = s.h || h) || !(c.w > 0 && c.h > 0)) return null;
+    return { x: +c.x || 0, y: +c.y || 0, w: +c.w, h: +c.h, ar: (w * c.w / 100).toFixed(1) + ' / ' + (h * c.h / 100).toFixed(1) };
+  }
+  // The size a picture shows at: its crop when it has one.
+  function shown(s, w, h) { var c = crop(s, w, h); return c ? [w * c.w / 100, h * c.h / 100] : [w, h]; }
   function isVideo(src) { return /\.(mp4|webm|mov)(\?|$)/i.test(String(src || '')); }
   // Every shape can carry a title, and the title says what the shape shows: "Stop now says what happened", not "Stop".
   function title(b) { return b.title ? '<div class="cv-s-title">' + md(b.title) + '</div>' : ''; }
@@ -58,12 +69,17 @@
     heading: function (b) { return '<h2 class="cv-h2" id="' + slug(b.text) + '">' + esc(b.text) + '</h2>'; },
     list: function (b) { return '<ul class="cv-ul">' + (b.items || []).map(function (i) { return '<li class="cv-li">' + md(i) + '</li>'; }).join('') + '</ul>'; },
     quote: function (b) { return '<blockquote class="cv-quote">' + md(b.md) + (b.cite ? '<cite>' + md(b.cite) + '</cite>' : '') + '</blockquote>'; },
-    aside: function (b) { return '<div class="cv-aside">' + (b.title ? '<b>' + esc(b.title) + '</b>' : '') + md(b.md) + '</div>'; },
+    // An aside is a side note; with a `tone` it's a callout: `good` for what worked, `warn` for what
+    // to watch. The tone tints the card and marks the title with a dot, never a coloured edge.
+    aside: function (b) {
+      var tone = /^(good|warn)$/.test(b.tone) ? ' is-' + b.tone : '';
+      return '<div class="cv-aside' + tone + '">' + (b.title ? '<b>' + esc(b.title) + '</b>' : '') + md(b.md) + '</div>';
+    },
     // A figure with `pins` is an anatomy: one picture, numbered notes on what it's made of.
     figure: function (b) {
       if (!b.pins || !b.pins.length)
-        return '<figure class="cv-block cv-figure" style="margin-inline:0">' + title(b) + '<div class="cv-fig">' + pic(b, b.alt, b.w, b.h, ' loading="lazy"') + '</div>' + cap(b) + '</figure>';
-      return '<figure class="cv-block cv-pinned cv-ana' + (b.wide === false ? '' : ' cv-wide has-notes') + '" style="margin-inline:0">' + title(b) +
+        return '<figure class="cv-block cv-figure cv-bleed' + place(b, true) + '" style="margin-inline:0">' + title(b) + '<div class="cv-fig" data-large>' + pic(b, b.alt, b.w, b.h, ' loading="lazy"') + '</div>' + cap(b) + '</figure>';
+      return '<figure class="cv-block cv-pinned cv-ana cv-bleed' + (b.wide === false ? '' : ' cv-wide has-notes') + '" style="margin-inline:0">' + title(b) +
         '<div class="cv-stage is-single"><div class="cv-side one is-on" data-side="one"><div class="cv-lens">' + pic(b, b.alt, b.w, b.h, ' draggable="false"') + '</div>' +
         '<span class="cv-dim"></span>' + pinButtons(b.pins) + '</div></div>' +
         '<div class="cv-notes">' + pinNotes('one', 'Notes', b.pins).replace('<ol ', '<ol class="is-on" ') + '</div>' + cap(b) + '</figure>';
@@ -83,7 +99,7 @@
       var notes = function (k) { return pinNotes(k, label(k) + ' notes', b[k] && b[k].pins); };
       var hasNotes = sides.some(function (k) { return b[k] && b[k].pins && b[k].pins.length; });
       var place = b.wide === false ? '' : hasNotes ? ' cv-wide has-notes' : ' cv-wide';
-      return '<figure class="cv-block cv-pinned cv-ba' + place + '" id="' + id + '" data-start="' + (b.start || 'before') + '" style="margin-inline:0">' + title(b) +
+      return '<figure class="cv-block cv-pinned cv-ba' + (blocks ? '' : ' cv-bleed') + place + '" id="' + id + '" data-start="' + (b.start || 'before') + '" style="margin-inline:0">' + title(b) +
         '<div class="cv-ba-bar"><div class="cv-seg" role="group" aria-label="Show">' +
           '<span class="cv-thumb"></span>' +
           sides.map(function (k) { return '<button type="button" data-show="' + k + '" aria-pressed="false">' + esc(label(k)) + '</button>'; }).join('') +
@@ -137,7 +153,7 @@
       var opts = b.options || [], rows = b.rows || [], n = opts.length;
       var cell = function (j, cls, html) { return '<div class="' + cls + (j === b.picked ? ' is-picked' : '') + '" data-opt="' + esc(opts[j]) + '">' + html + '</div>'; };
       var html = '<div class="lab head"></div>' + opts.map(function (o, j) {
-        return cell(j, 'opt top', md(o) + (j === b.picked ? '<span class="pick">' + esc(b.pickLabel || 'Picked') + '</span>' : ''));
+        return cell(j, 'opt top', md(o) + (j === b.picked && b.pickLabel !== '' ? '<span class="pick">' + esc(b.pickLabel || 'Picked') + '</span>' : ''));
       }).join('');
       rows.forEach(function (r, ri) {
         var last = ri === rows.length - 1;
@@ -161,16 +177,16 @@
 
     // Variants: what was tried, side by side, with the one that won marked. Without a pick it's a set of states.
     variants: function (b) {
-      var items = b.items || [], cols = Math.max(1, Math.min(4, b.cols || (items.length === 4 ? 2 : Math.min(items.length, 3))));
+      var items = b.items || [], pics = items.some(function (i) { return i.src; });
+      // Pictures sit two across at most, on the wide track, so a screen is big enough to read; text cards up to four.
+      var cols = Math.max(1, Math.min(pics ? 2 : 4, b.cols || (items.length === 4 ? 2 : Math.min(items.length, 3))));
       var ratio = (b.w && b.h) ? b.w + ' / ' + b.h : '4 / 3';
-      var pics = items.some(function (i) { return i.src; });
-      // Pictures three across go wide; one or two across, and text cards, stay in the text column.
-      return '<figure class="cv-block' + place(b, pics && cols > 2) + '" style="margin-inline:0">' + title(b) +
+      return '<figure class="cv-block' + (pics ? ' cv-bleed' : '') + place(b, pics) + '" style="margin-inline:0">' + title(b) +
         '<div class="cv-vars' + (pics ? '' : ' is-text') + '" style="--cols:' + cols + ';--ratio:' + ratio + '">' + items.map(function (i) {
-          var label = '<div class="cv-var-label">' + md(i.label || '') + (i.picked ? '<span class="pick">' + esc(b.pickLabel || 'Picked') + '</span>' : '') + '</div>';
+          var label = '<div class="cv-var-label">' + md(i.label || '') + (i.picked && b.pickLabel !== '' ? '<span class="pick">' + esc(b.pickLabel || 'Picked') + '</span>' : '') + '</div>';
           var note = i.note ? '<div class="cv-var-note">' + md(i.note) + '</div>' : '';
           var body = i.src
-            ? '<div class="cv-var-pic' + (b.fit === 'contain' ? ' is-contain' : '') + '">' + pic(i, i.alt || plain(i.label), i.w || b.w, i.h || b.h, ' loading="lazy"') + '</div>' + label + note
+            ? '<div class="cv-var-pic' + (b.fit === 'contain' ? ' is-contain' : '') + '" data-large>' + pic(i, i.alt || plain(i.label), i.w || b.w, i.h || b.h, ' loading="lazy"') + '</div>' + label + note
             : '<div class="cv-var-card">' + label + (i.md ? '<div class="cv-var-text">' + md(i.md) + '</div>' : '') + note + '</div>';
           return '<div class="cv-var' + (i.picked ? ' is-picked' : '') + (i.mark === 'gone' ? ' is-gone' : '') + '">' + body + '</div>';
         }).join('') + '</div>' + cap(b) + '</figure>';
@@ -295,6 +311,123 @@
         : '<div class="cv-live-mount" data-template="' + esc(b.template) + '"></div>';
       return '<figure class="cv-block cv-live' + (b.bare ? ' is-bare' : '') + place(b, false) + '" style="margin-inline:0">' + title(b) +
         '<div class="cv-live-card">' + body + '</div>' + cap(b) + '</figure>';
+    },
+
+    // Cards: a handful of things, each worth opening. A name, a kind, a line, somewhere
+    // to go, and a picture when there is one: places on a trip, pages, tools, people. Things compared on the same fields
+    // are a table.
+    cards: function (b) {
+      var items = b.items || [], pics = items.some(function (i) { return i.src; });
+      var cols = Math.max(1, Math.min(pics ? 2 : 3, b.cols || (items.length > 4 && !pics ? 3 : 2)));
+      var ratio = (b.w && b.h) ? b.w + ' / ' + b.h : '3 / 2';
+      return '<figure class="cv-block' + place(b, false) + '" style="margin-inline:0">' + title(b) +
+        '<div class="cv-cards" style="--cols:' + cols + ';--ratio:' + ratio + '">' + items.map(function (i) {
+          var out = /^https?:/.test(i.href || ''), tag = i.href ? 'a' : 'div';
+          var go = i.href ? ' href="' + esc(i.href) + '"' + (out ? ' rel="noopener"' : '') : '';
+          var foot = [i.kind, i.meta].filter(Boolean);
+          return '<' + tag + ' class="cv-card' + (i.key ? ' is-key' : '') + '"' + go + '>' +
+            (i.src ? '<div class="cv-card-pic">' + pic(i, i.alt || plain(i.title), i.w || b.w, i.h || b.h, ' loading="lazy"') + '</div>' : '') +
+            '<div class="cv-card-body"><div class="cv-card-title">' + md(i.title || '') +
+              (out ? '<svg viewBox="0 0 16 16" aria-hidden="true"><path d="M5.5 10.5 10.5 5.5M6.5 5.5h4v4"/></svg>' : '') + '</div>' +
+              (i.text ? '<div class="cv-card-text">' + md(i.text) + '</div>' : '') +
+              (foot.length ? '<div class="cv-card-foot">' + foot.map(function (f, k) { return '<span' + (k === 0 && i.kind ? ' class="kind"' : '') + '>' + md(f) + '</span>'; }).join('') + '</div>' : '') +
+            '</div></' + tag + '>';
+        }).join('') + '</div>' + cap(b) + '</figure>';
+    },
+
+    // Carousel: screens seen one after another, swiped or stepped through: a flow's screens on a phone, a set of pages.
+    // Pictures stand at one height, so tall phone screens sit two or three to a view and wide ones one at a time.
+    // Side by side to compare is variants. Wired after the page is drawn (carousel() below).
+    carousel: function (b) {
+      var items = b.items || [];
+      if (!items.length) return bad('A carousel needs items.');
+      return '<figure class="cv-block cv-car cv-bleed' + place(b, true) + '" style="margin-inline:0">' + title(b) +
+        '<div class="cv-car-track" tabindex="0" aria-label="' + esc(plain(b.title || 'Pictures')) + ', ' + items.length + ' in all">' + items.map(function (i, n) {
+          var w = i.w || b.w || 4, h = i.h || b.h || 3, sz = shown(i, w, h);
+          return '<div class="cv-car-slide" style="--ar:' + w + ' / ' + h + ';--r:' + (sz[0] / sz[1]).toFixed(4) + '" aria-label="' + (n + 1) + ' of ' + items.length + '">' +
+            '<div class="cv-car-pic" data-large>' + pic(i, i.alt || plain(i.label || ''), w, h, ' loading="lazy"') + '</div>' +
+            (i.label ? '<div class="cv-car-label">' + md(i.label) + '</div>' : '') + (i.note ? '<div class="cv-car-note">' + md(i.note) + '</div>' : '') + '</div>';
+        }).join('') + '</div>' +
+        '<div class="cv-car-bar"><div class="cv-car-ctl">' +
+          '<button type="button" data-go="-1" aria-label="Previous"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5"/></svg></button>' +
+          '<span class="n" aria-live="polite">1 of ' + items.length + '</span>' +
+          '<button type="button" data-go="1" aria-label="Next"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg></button>' +
+        '</div></div>' + cap(b) + '</figure>';
+    },
+
+    // Sheet: a table the owner edits on the page (a booking list, a review, a budget). Each column is text, a number, a
+    // tick or a pick; rows can be added and removed; every change saves to the vault under the block's `id`.
+    // A table only to read is `table`. Wired after the page is drawn (sheet() below).
+    sheet: function (b) {
+      var id = b.id || slug(plain(b.title || 'sheet'));
+      var cols = (b.columns || []).map(function (c) { return typeof c === 'string' ? { label: c } : c; });
+      var sums = cols.some(function (c) { return c.sum; }), add = b.add !== false;
+      return '<figure class="cv-block cv-sheet' + place(b, false) + '" data-sheet="' + esc(id) + '" data-cols="' + esc(JSON.stringify(cols)) + '" data-add="' + (add ? 1 : 0) + '" style="margin-inline:0">' + title(b) +
+        '<div class="cv-table cv-sheet-box"><table><thead><tr>' + cols.map(function (c) {
+          return '<th' + (c.kind === 'number' ? ' class="r"' : '') + '>' + md(c.label || '') + '</th>';
+        }).join('') + (add ? '<th class="x"><span class="cv-sr">Remove</span></th>' : '') + '</tr></thead><tbody>' +
+        (b.rows || []).map(function (r) { return sheetRow(cols, r, add); }).join('') + '</tbody>' +
+        (sums ? '<tfoot><tr>' + cols.map(function (c, j) { return '<td' + (c.kind === 'number' ? ' class="r"' : '') + ' data-sum="' + (c.sum ? j : '') + '">' + (j === 0 ? 'Total' : '') + '</td>'; }).join('') + (add ? '<td></td>' : '') + '</tr></tfoot>' : '') +
+        '</table></div>' +
+        '<div class="cv-sheet-bar">' + (add ? '<button type="button" class="cv-sheet-add">Add row</button>' : '') + '<span class="cv-ask-status" aria-live="polite"></span></div>' + cap(b) + '</figure>';
+    },
+
+    // Gallery: a wall of pictures, any shape, each opening large with its caption; arrows and arrow keys walk the set.
+    // For 6 or more pictures with nothing to pick. Options side by side are variants; screens in order, a carousel.
+    gallery: function (b) {
+      var items = b.items || [];
+      if (!items.length) return bad('A gallery needs items.');
+      var cols = Math.max(1, Math.min(2, b.cols || 2));
+      return '<figure class="cv-block cv-gal cv-bleed' + place(b, true) + '" style="margin-inline:0">' + title(b) +
+        '<div class="cv-gal-grid" style="--cols:' + cols + '">' + items.map(function (i, n) {
+          return '<button type="button" class="cv-gal-item" data-i="' + n + '" data-label="' + esc(plain(i.label || '')) + '" data-note="' + esc(plain(i.note || '')) + '" aria-label="' + esc(plain(i.label || i.alt || 'Picture ' + (n + 1))) + ', open">' +
+            pic(i, i.alt || plain(i.label || ''), i.w, i.h, ' loading="lazy"') + '</button>';
+        }).join('') + '</div>' + cap(b) + '</figure>';
+    },
+
+    // Map: places on a real map (Esri's grey canvas over OpenStreetMap data, dark by night, light by day), numbered, with the list
+    // under it: name, kind, a fact, and a link that opens the place in Google Maps. For trips and anywhere a place's
+    // where matters. The map fits every place; drag to look around, − and + to zoom. Wired after the page is drawn.
+    map: function (b) {
+      var places = b.places || [];
+      if (!places.length) return bad('A map needs places.');
+      return '<figure class="cv-block cv-map' + place(b, false) + '" data-places="' + esc(JSON.stringify(places.map(function (p) { return [+p.lat, +p.lng, !!p.key]; }))) + '"' + (b.zoom ? ' data-zoom="' + (+b.zoom) + '"' : '') + ' style="margin-inline:0">' + title(b) +
+        '<div class="cv-map-box" role="img" aria-label="Map of ' + places.length + ' places"><div class="cv-map-tiles"></div><div class="cv-map-pins"></div></div>' +
+        '<div class="cv-map-bar"><span class="cv-map-credit">Esri, HERE, Garmin, © OpenStreetMap</span><div class="cv-zoom"><button type="button" data-z="out" aria-label="Zoom out">−</button><button type="button" data-z="in" aria-label="Zoom in">+</button><button type="button" data-z="fit">Fit</button></div></div>' +
+        '<ol class="cv-map-list">' + places.map(function (p, n) {
+          var href = p.href || 'https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(plain(p.query || p.title || (p.lat + ',' + p.lng)));
+          var foot = [p.kind, p.meta].filter(Boolean);
+          return '<li data-n="' + n + '"' + (p.key ? ' class="is-key"' : '') + '><span class="cv-map-num">' + (n + 1) + '</span><div><a href="' + esc(href) + '" rel="noopener">' + md(p.title || '') + '</a>' +
+            (foot.length ? '<div class="d">' + foot.map(function (f, k) { return '<span' + (k === 0 && p.kind ? ' class="kind"' : '') + '>' + md(f) + '</span>'; }).join('') + '</div>' : '') +
+            (p.note ? '<div class="note">' + md(p.note) + '</div>' : '') + '</div></li>';
+        }).join('') + '</ol>' + cap(b) + '</figure>';
+    },
+
+    // Ask: questions the owner answers on the page. A pick, a few picks, a number, a
+    // line. Answers save to the vault under the block's `id` (pages/_state/<page>.json) for Claude to read. `rec` marks
+    // the option Claude would pick, so it's a recommendation, not a menu. Wired after the page is drawn (ask() below).
+    ask: function (b) {
+      var id = b.id || slug(plain(b.title || 'answers'));
+      return '<figure class="cv-block cv-ask' + place(b, false) + '" data-ask="' + esc(id) + '" style="margin-inline:0">' + title(b) +
+        '<div class="cv-ask-card">' + (b.questions || []).map(function (q, n) {
+          var qid = esc(q.id || 'q' + (n + 1)), kind = q.kind || 'pick', body;
+          if (kind === 'pick' || kind === 'many') {
+            body = '<div class="cv-opts" role="group" data-kind="' + kind + '">' + (q.options || []).map(function (o) {
+              o = typeof o === 'string' ? { label: o } : o;
+              return '<button type="button" class="cv-opt" aria-pressed="false" data-v="' + esc(plain(o.label)) + '">' +
+                '<span class="l">' + md(o.label) + (o.rec ? '<span class="rec">Suggested</span>' : '') + '</span>' +
+                (o.note ? '<span class="d">' + md(o.note) + '</span>' : '') + '</button>';
+            }).join('') + '</div>';
+          } else if (kind === 'scale') {
+            var v = q.value != null ? q.value : q.min || 0;
+            body = '<div class="cv-scale"><input type="range" min="' + (+q.min || 0) + '" max="' + (+q.max || 10) + '" step="' + (+q.step || 1) + '" value="' + (+v) + '" aria-label="' + esc(plain(q.q)) + '">' +
+              '<output data-unit="' + esc(q.unit || '') + '"></output></div>';
+          } else {
+            body = '<textarea class="cv-ask-text" rows="2" placeholder="' + esc(q.placeholder || '') + '" aria-label="' + esc(plain(q.q)) + '"></textarea>';
+          }
+          return '<div class="cv-q" data-q="' + qid + '" data-kind="' + kind + '"><div class="cv-q-label">' + md(q.q || '') + '</div>' +
+            (q.note ? '<div class="cv-q-note">' + md(q.note) + '</div>' : '') + body + '</div>';
+        }).join('') + '<div class="cv-ask-status" aria-live="polite"></div></div>' + cap(b) + '</figure>';
     },
 
     code: function (b) {
@@ -479,6 +612,17 @@
     var s = new Intl.NumberFormat('en-US', big ? { notation: 'compact', maximumFractionDigits: 1 } : { maximumFractionDigits: dec, minimumFractionDigits: dec }).format(v);
     return (b.prefix || '') + s + (b.unit || '');
   }
+  // One editable row of a sheet: each cell an input that looks like text until it's touched.
+  function sheetRow(cols, r, add) {
+    r = Array.isArray(r) ? r : [];
+    return '<tr>' + cols.map(function (c, j) {
+      var v = r[j], lab = ' aria-label="' + esc(plain(c.label || '')) + '"';
+      var cell = c.kind === 'check' ? '<input type="checkbox"' + (v ? ' checked' : '') + lab + '>'
+        : c.kind === 'pick' ? '<select' + lab + '><option value=""></option>' + (c.options || []).map(function (o) { return '<option' + (o === v ? ' selected' : '') + '>' + esc(o) + '</option>'; }).join('') + '</select>'
+        : '<input type="' + (c.kind === 'number' ? 'number' : 'text') + '" value="' + esc(v == null ? '' : v) + '"' + (c.placeholder ? ' placeholder="' + esc(c.placeholder) + '"' : '') + lab + '>';
+      return '<td class="k-' + (c.kind || 'text') + (c.kind === 'number' ? ' r' : '') + '">' + cell + '</td>';
+    }).join('') + (add ? '<td class="x"><button type="button" class="cv-sheet-rm" aria-label="Remove row"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4.5 4.5 7 7M11.5 4.5l-7 7"/></svg></button></td>' : '') + '</tr>';
+  }
   // A small, honest highlighter: comments, strings, numbers and keywords, one line at a time. Anything it doesn't
   // know stays plain, which is the right failure for a page meant to be read, not edited.
   var KW = /^(const|let|var|function|return|if|else|for|while|import|export|from|default|class|new|async|await|true|false|null|undefined|def|self|None|True|False|in|of|type|interface)$/;
@@ -627,7 +771,8 @@
 
   var ICON_SUN = '<svg class="sun" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" aria-hidden="true"><circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/></svg>';
   var ICON_MOON = '<svg class="moon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.6" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true"><path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/></svg>';
-  var back = spec.back || { href: '/', label: 'Vault' };
+  // The reader hands every page the way back to the entry it belongs to (Oct 15), for a spec that names none.
+  var back = spec.back || window.VAULT_BACK || { href: '/', label: 'Vault' };
 
   var main = document.createElement('main');
   main.className = 'frame cv';
@@ -669,6 +814,281 @@
       try { if (!fixed && window.ResizeObserver) new ResizeObserver(sync).observe(f.contentDocument.documentElement); } catch (e) {}
     });
     new MutationObserver(sync).observe(document.documentElement, { attributes: true, attributeFilter: ['data-mode'] });
+  });
+
+  // Sheet: read the rows back off the table, save them, keep the totals right; saved rows replace the spec's.
+  [].forEach.call(main.querySelectorAll('.cv-sheet'), function (fig) {
+    var id = fig.getAttribute('data-sheet'), cols = JSON.parse(fig.getAttribute('data-cols')), add = fig.getAttribute('data-add') === '1';
+    var body = fig.querySelector('tbody'), status = fig.querySelector('.cv-ask-status'), store = window.vault && window.vault.state, waiting = false, t = 0;
+    function rows() {
+      return [].map.call(body.rows, function (tr) {
+        return cols.map(function (c, j) {
+          var el = tr.cells[j].querySelector('input, select');
+          return c.kind === 'check' ? el.checked : c.kind === 'number' ? (el.value === '' ? null : +el.value) : el.value;
+        });
+      });
+    }
+    function totals() {
+      [].forEach.call(fig.querySelectorAll('[data-sum]'), function (td) {
+        var j = td.getAttribute('data-sum'); if (j === '') return;
+        var n = rows().reduce(function (a, r) { return a + (+r[j] || 0); }, 0);
+        td.textContent = num(n, cols[j]);
+      });
+    }
+    function save(now) {
+      totals(); clearTimeout(t);
+      if (!store) return;
+      t = setTimeout(function () { waiting = true; status.textContent = ''; store.set(id, rows()); }, now ? 0 : 400);
+    }
+    addEventListener('vault:saved', function (e) { if (!waiting) return; waiting = false; status.textContent = e.detail.ok ? 'Saved' : 'This browser only'; });
+    fig.addEventListener('input', function (e) { if (e.target.matches('input[type="text"], input[type="number"]')) save(false); });
+    fig.addEventListener('change', function (e) { if (e.target.matches('input[type="checkbox"], select')) save(true); });
+    fig.addEventListener('click', function (e) {
+      if (e.target.closest('.cv-sheet-add')) { body.insertAdjacentHTML('beforeend', sheetRow(cols, [], add)); body.rows[body.rows.length - 1].querySelector('input, select').focus(); save(true); }
+      var rm = e.target.closest('.cv-sheet-rm'); if (rm) { rm.closest('tr').remove(); save(true); }
+    });
+    totals();
+    if (store) store.get(id).then(function (saved) {
+      if (!Array.isArray(saved) || fig.contains(document.activeElement)) return;
+      body.innerHTML = saved.map(function (r) { return sheetRow(cols, r, add); }).join(''); totals();
+    });
+  });
+
+  // One lightbox per page, opened on a picture; arrows, arrow keys and Escape. It lives in the page's frame so
+  // a picture with a day version follows the theme, and it sits in the top layer so nothing covers it.
+  var lb = null;
+  function lightbox() {
+    if (lb) return lb;
+    lb = document.createElement('dialog');
+    lb.className = 'cv-lb';
+    lb.innerHTML = '<div class="cv-lb-pic"></div><div class="cv-lb-cap"><b></b><span></span></div>' +
+      '<div class="cv-lb-bar"><div class="cv-car-ctl"><button type="button" data-go="-1" aria-label="Previous"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M10 3.5 5.5 8l4.5 4.5"/></svg></button>' +
+      '<span class="n" aria-live="polite"></span><button type="button" data-go="1" aria-label="Next"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="M6 3.5 10.5 8 6 12.5"/></svg></button></div>' +
+      '<button type="button" class="cv-lb-x" aria-label="Close"><svg viewBox="0 0 16 16" aria-hidden="true"><path d="m4.5 4.5 7 7M11.5 4.5l-7 7"/></svg></button></div>';
+    main.appendChild(lb);
+    lb.addEventListener('click', function (e) {
+      if (e.target === lb || e.target.closest('.cv-lb-x')) return lb.close();
+      var g = e.target.closest('[data-go]'); if (g) lb.show_(+g.getAttribute('data-go'));
+    });
+    lb.addEventListener('keydown', function (e) { if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); lb.show_(e.key === 'ArrowRight' ? 1 : -1); } });
+    return lb;
+  }
+  // Any picture opens large. A gallery's pictures, a
+  // figure, a carousel's slides and picture variants walk as one set within their shape. The large one is always the
+  // whole picture, uncropped, day or night to match the page.
+  var OPENS = '.cv-gal-item, [data-large]';
+  var labelOf = function (el) {
+    if (el.hasAttribute('data-label')) return [el.getAttribute('data-label'), el.getAttribute('data-note')];
+    var box = el.parentElement, fig = el.closest('.cv-block');
+    var t = function (q, root) { var n = (root || box).querySelector(q); return n ? n.textContent.trim() : ''; };
+    if (el.classList.contains('cv-fig')) return [t('.cv-s-title', fig), t('.cv-cap', fig)];
+    var lab = box.querySelector('.cv-var-label, .cv-car-label');
+    var name = lab ? [].filter.call(lab.childNodes, function (n) { return !(n.classList && n.classList.contains('pick')); }).map(function (n) { return n.textContent; }).join('').trim() : '';
+    return [name, t('.cv-var-note, .cv-car-note')];
+  };
+  [].forEach.call(main.querySelectorAll('[data-large]'), function (el) {
+    el.setAttribute('tabindex', '0'); el.setAttribute('role', 'button');
+    el.setAttribute('aria-label', (labelOf(el)[0] || 'Picture') + ', open large');
+  });
+  function openLarge(el) {
+    var items = [].slice.call(el.closest('.cv-block').querySelectorAll(OPENS)), cur = items.indexOf(el);
+    var box = lightbox();
+    box.show_ = function (d) {
+      cur = Math.max(0, Math.min(items.length - 1, cur + d));
+      var src = items[cur], at = box.querySelector('.cv-lb-pic'), lab = labelOf(src);
+      at.innerHTML = '';
+      [].forEach.call(src.querySelectorAll('img, video'), function (m) {
+        var c = m.cloneNode(true); c.removeAttribute('loading'); c.removeAttribute('style'); at.appendChild(c);
+      });
+      box.querySelector('.cv-lb-cap b').textContent = lab[0];
+      box.querySelector('.cv-lb-cap span').textContent = lab[1];
+      box.querySelector('.cv-lb-bar .cv-car-ctl').hidden = items.length < 2;
+      box.querySelector('.n').textContent = (cur + 1) + ' of ' + items.length;
+      box.querySelector('[data-go="-1"]').disabled = cur === 0;
+      box.querySelector('[data-go="1"]').disabled = cur === items.length - 1;
+    };
+    box.show_(0);
+    box.addEventListener('close', function back() { box.removeEventListener('close', back); items[cur].focus({ preventScroll: true }); });
+    box.showModal();
+  }
+  main.addEventListener('click', function (e) {
+    var el = e.target.closest(OPENS);
+    if (el && main.contains(el) && !e.target.closest('.cv-lb')) openLarge(el);
+  });
+  main.addEventListener('keydown', function (e) {
+    if ((e.key === 'Enter' || e.key === ' ') && e.target.matches && e.target.matches('[data-large]')) { e.preventDefault(); openLarge(e.target); }
+  });
+
+  // Map: Web Mercator tiles laid out around a centre, the pins on top, refit on resize; drag pans, − and + zoom.
+  [].forEach.call(main.querySelectorAll('.cv-map'), function (fig) {
+    var pts = JSON.parse(fig.getAttribute('data-places')), box = fig.querySelector('.cv-map-box'), tiles = fig.querySelector('.cv-map-tiles'), pins = fig.querySelector('.cv-map-pins');
+    var T = 256, z = 3, cx = 0, cy = 0, kept = {};
+    function px(lat, lng, zz) {
+      var s = T * Math.pow(2, zz), r = Math.sin(lat * Math.PI / 180);
+      return [(lng + 180) / 360 * s, (.5 - Math.log((1 + r) / (1 - r)) / (4 * Math.PI)) * s];
+    }
+    function fit() {
+      var W = box.clientWidth, H = box.clientHeight, pad = 56;
+      for (z = Math.min(16, +fig.getAttribute('data-zoom') || 16); z > 1; z--) {
+        var xs = pts.map(function (p) { return px(p[0], p[1], z)[0]; }), ys = pts.map(function (p) { return px(p[0], p[1], z)[1]; });
+        if (Math.max.apply(0, xs) - Math.min.apply(0, xs) <= W - 2 * pad && Math.max.apply(0, ys) - Math.min.apply(0, ys) <= H - 2 * pad) break;
+      }
+      var a = pts.map(function (p) { return px(p[0], p[1], z); });
+      cx = (Math.min.apply(0, a.map(function (q) { return q[0]; })) + Math.max.apply(0, a.map(function (q) { return q[0]; }))) / 2;
+      cy = (Math.min.apply(0, a.map(function (q) { return q[1]; })) + Math.max.apply(0, a.map(function (q) { return q[1]; }))) / 2;
+      draw();
+    }
+    function draw() {
+      var W = box.clientWidth, H = box.clientHeight, n = Math.pow(2, z), tone = document.documentElement.dataset.mode === 'light' ? 'Light' : 'Dark', want = {};
+      var x0 = Math.floor((cx - W / 2) / T), x1 = Math.floor((cx + W / 2) / T), y0 = Math.max(0, Math.floor((cy - H / 2) / T)), y1 = Math.min(n - 1, Math.floor((cy + H / 2) / T));
+      for (var x = x0; x <= x1; x++) for (var y = y0; y <= y1; y++) {
+        // the grey ground only: no place names under the pins, the list under the map names every place
+        ['Base'].forEach(function (layer) {
+          var tx = ((x % n) + n) % n, key = tone + layer + '/' + z + '/' + tx + '/' + y, img = kept[key];
+          if (!img) {
+            img = document.createElement('img'); img.alt = ''; img.draggable = false;
+            img.src = 'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_' + tone + '_Gray_' + layer + '/MapServer/tile/' + z + '/' + y + '/' + tx;
+            kept[key] = img;
+          }
+          img.style.transform = 'translate(' + Math.round(x * T - cx + W / 2) + 'px,' + Math.round(y * T - cy + H / 2) + 'px)';
+          want[key] = 1;
+          if (img.parentNode !== tiles) tiles.appendChild(img);
+        });
+      }
+      Object.keys(kept).forEach(function (k) { if (!want[k] && kept[k].parentNode) tiles.removeChild(kept[k]); if (!want[k] && k.split('/')[1] != z) delete kept[k]; });
+      // pins closer than one pin apart are eased apart until they just touch, so every number stays readable
+      var at = pts.map(function (p) { var q = px(p[0], p[1], z); return [q[0] - cx + W / 2, q[1] - cy + H / 2]; }), gap = 24;
+      for (var k = 0; k < 6; k++) for (var a = 0; a < at.length; a++) for (var c = a + 1; c < at.length; c++) {
+        var dx = at[c][0] - at[a][0], dy = at[c][1] - at[a][1], d = Math.hypot(dx, dy);
+        if (d >= gap) continue;
+        if (d < .01) { dx = 1; dy = 0; d = 1; }
+        var push = (gap - d) / 2 / d;
+        at[a][0] -= dx * push; at[a][1] -= dy * push; at[c][0] += dx * push; at[c][1] += dy * push;
+      }
+      pins.innerHTML = pts.map(function (p, i) {
+        return '<span class="cv-map-pin' + (p[2] ? ' is-key' : '') + '" data-n="' + i + '" style="transform:translate(' + Math.round(at[i][0]) + 'px,' + Math.round(at[i][1]) + 'px)">' + (i + 1) + '</span>';
+      }).join('');
+    }
+    function zoom(d) { var k = Math.pow(2, d); if (z + d < 1 || z + d > 18) return; z += d; cx *= k; cy *= k; draw(); }
+    // The tiles come in two greys with a warm cast. A filter takes each pixel's lightness and lays the tile's water and
+    // land onto the vault's own tokens (night: water on --surface, land on --raised; day: water on --fill, land on
+    // --surface), read live, so the map is a card of the system's greys in both themes. Lines fall where they land.
+    var fid = 'cv-map-tone-' + (++uid), svgNS = 'http://www.w3.org/2000/svg';
+    var tone = document.createElementNS(svgNS, 'svg'); tone.setAttribute('width', '0'); tone.setAttribute('height', '0'); tone.style.position = 'absolute';
+    fig.appendChild(tone);
+    var probe = document.createElement('canvas').getContext('2d', { willReadFrequently: true });
+    function rgb(token) {
+      var el = document.createElement('i'); el.style.color = 'var(' + token + ')'; fig.appendChild(el);
+      var c = getComputedStyle(el).color; el.remove();
+      probe.clearRect(0, 0, 1, 1); probe.fillStyle = '#000'; probe.fillStyle = c; probe.fillRect(0, 0, 1, 1);
+      var d = probe.getImageData(0, 0, 1, 1).data; return [d[0] / 255, d[1] / 255, d[2] / 255];
+    }
+    function retone() {
+      var day = document.documentElement.dataset.mode === 'light';
+      // the source's lightness for water and for land, measured off the tiles (night .138 and .248, day .815 and .937)
+      var lw = day ? .815 : .138, ll = day ? .937 : .248;
+      var water = rgb(day ? '--fill' : '--surface'), land = rgb(day ? '--surface' : '--raised');
+      var table = function (ch) {
+        var out = [];
+        for (var t = 0; t <= 32; t++) out.push(Math.max(0, Math.min(1, water[ch] + (t / 32 - lw) * (land[ch] - water[ch]) / (ll - lw))).toFixed(4));
+        return out.join(' ');
+      };
+      tone.innerHTML = '<filter id="' + fid + '" color-interpolation-filters="sRGB">' +
+        '<feColorMatrix type="matrix" values=".2126 .7152 .0722 0 0 .2126 .7152 .0722 0 0 .2126 .7152 .0722 0 0 0 0 0 1 0"/>' +
+        '<feComponentTransfer><feFuncR type="table" tableValues="' + table(0) + '"/><feFuncG type="table" tableValues="' + table(1) + '"/><feFuncB type="table" tableValues="' + table(2) + '"/></feComponentTransfer></filter>';
+      tiles.style.filter = 'url(#' + fid + ')';
+    }
+    retone();
+    fig.querySelector('.cv-zoom').addEventListener('click', function (e) {
+      var b = e.target.closest('[data-z]'); if (!b) return;
+      var w = b.getAttribute('data-z'); if (w === 'fit') fit(); else zoom(w === 'in' ? 1 : -1);
+    });
+    var drag = null;
+    box.addEventListener('pointerdown', function (e) { drag = { x: e.clientX, y: e.clientY, cx: cx, cy: cy }; box.setPointerCapture(e.pointerId); box.classList.add('is-drag'); });
+    box.addEventListener('pointermove', function (e) { if (!drag) return; cx = drag.cx - (e.clientX - drag.x); cy = drag.cy - (e.clientY - drag.y); draw(); });
+    ['pointerup', 'pointercancel'].forEach(function (t) { box.addEventListener(t, function () { drag = null; box.classList.remove('is-drag'); }); });
+    box.addEventListener('dblclick', function () { zoom(1); });
+    // a place in the list and its pin light up together
+    function hot(n, on) { [].forEach.call(fig.querySelectorAll('[data-n="' + n + '"]'), function (el) { el.classList.toggle('is-hot', on); }); }
+    ['pointerover', 'focusin'].forEach(function (t) { fig.addEventListener(t, function (e) { var el = e.target.closest('[data-n]'); if (el) hot(el.getAttribute('data-n'), true); }); });
+    ['pointerout', 'focusout'].forEach(function (t) { fig.addEventListener(t, function (e) { var el = e.target.closest('[data-n]'); if (el) hot(el.getAttribute('data-n'), false); }); });
+    new MutationObserver(function () { retone(); draw(); setTimeout(retone, 500); }).observe(document.documentElement, { attributes: true, attributeFilter: ['data-mode'] });
+    if (window.ResizeObserver) new ResizeObserver(function () { draw(); }).observe(box);
+    fit();
+  });
+
+  // Carousel: the count follows the scroll; the arrows step one picture and stop at the ends; arrow keys work on the track.
+  [].forEach.call(main.querySelectorAll('.cv-car'), function (fig) {
+    var track = fig.querySelector('.cv-car-track'), slides = [].slice.call(track.children), n = fig.querySelector('.cv-car-ctl .n');
+    var prev = fig.querySelector('[data-go="-1"]'), next = fig.querySelector('[data-go="1"]'), cur = 0, raf = 0;
+    var calm = window.matchMedia && matchMedia('(prefers-reduced-motion: reduce)').matches;
+    function left(i) { return slides[i].offsetLeft - slides[0].offsetLeft; }
+    function atEnd() { return track.scrollLeft + track.clientWidth >= track.scrollWidth - 2; }
+    // The count names what's in view: "2 of 5" for one picture, "3–5 of 5" when tall ones sit three to a view.
+    function sync() {
+      raf = 0;
+      var x = track.scrollLeft, last = 0;
+      cur = 0;
+      slides.forEach(function (sl, i) {
+        if (Math.abs(left(i) - x) < Math.abs(left(cur) - x)) cur = i;
+        if (left(i) + sl.offsetWidth <= x + track.clientWidth + 2) last = i;
+      });
+      last = Math.max(cur, last);
+      n.textContent = (last > cur ? (cur + 1) + '–' + (last + 1) : cur + 1) + ' of ' + slides.length;
+      prev.disabled = x <= 2; next.disabled = atEnd();
+    }
+    function go(d) {
+      var i = Math.max(0, Math.min(slides.length - 1, cur + d));
+      track.scrollTo({ left: Math.min(left(i), track.scrollWidth - track.clientWidth), behavior: calm ? 'auto' : 'smooth' });
+    }
+    track.addEventListener('scroll', function () { if (!raf) raf = requestAnimationFrame(sync); }, { passive: true });
+    fig.querySelector('.cv-car-ctl').addEventListener('click', function (e) { var b = e.target.closest('[data-go]'); if (b) go(+b.getAttribute('data-go')); });
+    track.addEventListener('keydown', function (e) {
+      if (e.key === 'ArrowRight' || e.key === 'ArrowLeft') { e.preventDefault(); go(e.key === 'ArrowRight' ? 1 : -1); }
+    });
+    addEventListener('resize', function () { if (!raf) raf = requestAnimationFrame(sync); });
+    sync();
+  });
+
+  // Ask: put back what was answered, and save each answer as it changes. vault.state keeps it in the vault; a page
+  // opened from disk keeps it in this browser.
+  [].forEach.call(main.querySelectorAll('.cv-ask'), function (fig) {
+    var id = fig.getAttribute('data-ask'), status = fig.querySelector('.cv-ask-status'), answers = {}, store = window.vault && window.vault.state;
+    function show(q, v) {
+      var kind = q.getAttribute('data-kind');
+      if (kind === 'pick' || kind === 'many') [].forEach.call(q.querySelectorAll('.cv-opt'), function (o) {
+        var on = kind === 'many' ? [].concat(v || []).indexOf(o.getAttribute('data-v')) > -1 : v === o.getAttribute('data-v');
+        o.setAttribute('aria-pressed', String(on));
+      });
+      else if (kind === 'scale') { var r = q.querySelector('input'); if (v != null) r.value = v; var o = q.querySelector('output'); o.textContent = r.value + (o.getAttribute('data-unit') ? ' ' + o.getAttribute('data-unit') : ''); }
+      else if (v != null) q.querySelector('textarea').value = v;
+    }
+    // A cleared answer leaves the file. "Saved" only once the vault has it; off the vault it says where it went.
+    function save(q, v) {
+      var k = q.getAttribute('data-q');
+      if (v == null || (Array.isArray(v) && !v.length)) delete answers[k]; else answers[k] = v;
+      show(q, v);
+      if (store) { waiting = true; status.textContent = ''; store.set(id, Object.keys(answers).length ? answers : null); }
+    }
+    var waiting = false;
+    addEventListener('vault:saved', function (e) { if (!waiting) return; waiting = false; status.textContent = e.detail.ok ? 'Saved' : 'This browser only'; });
+    [].forEach.call(fig.querySelectorAll('.cv-q'), function (q) {
+      var kind = q.getAttribute('data-kind'), key = q.getAttribute('data-q');
+      show(q);
+      if (kind === 'pick' || kind === 'many') q.addEventListener('click', function (e) {
+        var o = e.target.closest('.cv-opt'); if (!o) return;
+        var v = o.getAttribute('data-v'), cur = answers[key];
+        if (kind === 'many') { cur = [].concat(cur || []); var at = cur.indexOf(v); if (at > -1) cur.splice(at, 1); else cur.push(v); save(q, cur); }
+        else save(q, cur === v ? null : v);
+      });
+      else if (kind === 'scale') q.querySelector('input').addEventListener('input', function (e) { save(q, +e.target.value); });
+      else { var t; q.querySelector('textarea').addEventListener('input', function (e) { clearTimeout(t); var v = e.target.value; t = setTimeout(function () { save(q, v); }, 400); }); }
+    });
+    if (store) store.get(id).then(function (s) {
+      // a tap made before the saved answers arrived wins over them
+      answers = Object.assign({}, s || {}, answers);
+      [].forEach.call(fig.querySelectorAll('.cv-q'), function (q) { if (answers[q.getAttribute('data-q')] != null) show(q, answers[q.getAttribute('data-q')]); });
+    });
   });
 
   // A pin and its note light up together, from either end. Reading a note also zooms the picture in on its pin.
@@ -957,11 +1377,12 @@
     var rail = document.querySelector('.frame.cv .rail');
     if (!rail) return;
     var r = rail.getBoundingClientRect();
-    // Too little room on the left (a zoomed or narrow window): the rail would be cut off at the edge, so it hides.
-    if (r.left < 12) { rail.classList.add('is-covered'); return; }
+    // Too little room on the right (a zoomed or narrow window): the rail would be cut off at the edge, so it hides.
+    if (r.right > document.documentElement.clientWidth - 12) { rail.classList.add('is-covered'); return; }
+    // A wide picture or diagram passing under it hides it for as long as they overlap.
     rail.classList.toggle('is-covered', [].some.call(main.querySelectorAll('.cv-wide, .cv-xwide'), function (el) {
       var b = el.getBoundingClientRect();
-      return b.left < r.right + 16 && b.bottom > r.top - 16 && b.top < r.bottom + 16;
+      return b.right > r.left - 16 && b.left < r.right + 16 && b.bottom > r.top - 16 && b.top < r.bottom + 16;
     }));
   }
   var coverSoon = function () { if (!railTick) railTick = requestAnimationFrame(cover); };
@@ -1022,12 +1443,13 @@
 
   [].forEach.call(main.querySelectorAll('.cv-tabs'), function (fig) {
     var seg = fig.querySelector('.cv-seg'), thumb = seg.querySelector('.cv-thumb'), stage = fig.querySelector('.cv-stage');
-    var current = (fig.querySelector('.cv-side.is-on') || fig.querySelector('.cv-side')).getAttribute('data-side');
+    var own = function (sel) { return stage.querySelectorAll(':scope > ' + sel); };
+    var current = (own('.cv-side.is-on')[0] || own('.cv-side')[0]).getAttribute('data-side');
     function place() { var on = seg.querySelector('[data-show="' + current + '"]'); thumb.style.width = on.offsetWidth + 'px'; thumb.style.transform = 'translateX(' + on.offsetLeft + 'px)'; }
-    function fit() { var on = stage.querySelector('.cv-side.is-on'), cs = getComputedStyle(stage); stage.style.height = (on.offsetHeight + parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom)) + 'px'; }
+    function fit() { var on = own('.cv-side.is-on')[0], cs = getComputedStyle(stage); stage.style.height = (on.offsetHeight + parseFloat(cs.paddingTop) + parseFloat(cs.paddingBottom)) + 'px'; }
     function show(k) {
       current = k;
-      [].forEach.call(stage.querySelectorAll('.cv-side'), function (s) { var on = s.getAttribute('data-side') === k; s.classList.toggle('is-on', on); s.setAttribute('aria-hidden', String(!on)); });
+      [].forEach.call(own('.cv-side'), function (s) { var on = s.getAttribute('data-side') === k; s.classList.toggle('is-on', on); s.setAttribute('aria-hidden', String(!on)); });
       [].forEach.call(seg.querySelectorAll('button'), function (b) { b.setAttribute('aria-selected', String(b.getAttribute('data-show') === k)); b.setAttribute('aria-pressed', String(b.getAttribute('data-show') === k)); });
       place(); fit();
       setTimeout(function () { dispatchEvent(new Event('resize')); }, 30);
