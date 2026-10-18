@@ -13,7 +13,7 @@
    Errors break the page or the rules. Warnings are the framework: titles that say the point, a shape in every
    section, short text between shapes, the arc's slots in order. */
 import { readFileSync, existsSync } from 'node:fs';
-import { join, resolve } from 'node:path';
+import { join, resolve, dirname, basename } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { DOCS, fieldsOf } from './shapes.mjs';
 import { layout, WIDTHS } from './layout.mjs';
@@ -51,6 +51,10 @@ export const CATALOG = {
   steps:  { group: 'structure', titled: true, need: ['items'], asks: 'What happens, in order?', when: 'A process someone goes through, 3 to 6 steps, no branches.' },
   code:   { group: 'structure', titled: true, need: ['code'], asks: 'What does the code say?', when: 'A few lines that carry the point: a config, a spec, a diff. Up to 30 lines; `mark` the ones that matter.' },
   table:  { group: 'structure', titled: true, need: ['columns', 'rows'], asks: 'What are the details of each?', when: 'Rows of things with the same 3+ fields. Options judged on criteria is compare.' },
+  cards:  { group: 'structure', titled: true, need: ['items'], asks: 'Which things, and where do I go for each?', when: '3 to 9 things each worth opening: places, pages, tools, people. A name, a kind, a line, a link, a picture if there is one. The same 3+ fields side by side is a table.' },
+  carousel: { group: 'structure', titled: true, need: ['items'], asks: 'What does each screen look like, in order?', when: '3 to 10 pictures of one kind seen one after another: a flow\'s screens on a phone, a set of pages. Side by side to compare is variants.' },
+  gallery: { group: 'structure', titled: true, need: ['items'], asks: 'What does it all look like?', when: '6 or more pictures with nothing to pick: a set of screens, a trip, a moodboard. Each opens large. Options to pick from is variants; screens in order, a carousel.' },
+  map:     { group: 'structure', titled: true, need: ['places'], asks: 'Where is everything?', when: '2 to 12 places whose where matters: a trip, a day out, a neighbourhood. Each with a name, a kind, a fact and lat/lng.' },
 
   // Time.
   timeline: { group: 'time', titled: true, need: ['items'], asks: 'How did we get here?', when: '3+ dated or ordered events.' },
@@ -66,6 +70,8 @@ export const CATALOG = {
 
   // Something to use. When trying it says the point better than any picture of it: a slider, a picker, a toy, a tool.
   live: { group: 'use', titled: true, need: [], asks: 'What happens when I try it?', when: 'The point lands by doing: drag, tune, pick, filter, play. A page\'s own <template>, or a page of its own in a frame.' },
+  ask: { group: 'use', titled: true, need: ['questions'], asks: 'What do I need from you?', when: '1 to 5 things only the owner can answer: a pick, a few picks, a number, a line. Answers save to the vault for Claude to read. Mark the option you would pick with `rec`.' },
+  sheet: { group: 'use', titled: true, need: ['columns'], asks: 'Can I change it as I go?', when: 'A list the owner keeps up himself on the page: bookings, a packing list, a review, a budget. Text, numbers, ticks and picks; rows added and removed; saved to the vault. Only to read is a table.' },
 };
 const SHAPES = Object.keys(CATALOG).filter((k) => CATALOG[k].group !== 'words');
 
@@ -87,7 +93,7 @@ const plain = (s) => String(s || '').replace(/\*|`|\[([^\]]+)\]\([^)]*\)/g, '$1'
 function strings(b, out = []) {
   if (typeof b === 'string') out.push(b);
   else if (Array.isArray(b)) b.forEach((x) => strings(x, out));
-  else if (b && typeof b === 'object') for (const k of Object.keys(b)) if (!/^(type|src|srcLight|poster|href|id|from|to|start|end|at|today|month|months|kind|mark|alt)$/.test(k)) strings(b[k], out);
+  else if (b && typeof b === 'object') for (const k of Object.keys(b)) if (!/^(type|src|srcLight|poster|href|id|from|to|start|end|at|today|month|months|kind|mark|alt|crop)$/.test(k)) strings(b[k], out);
   return out;
 }
 
@@ -120,6 +126,8 @@ export function check(spec, file = 'page') {
     if (c.titled && !b.title && !path.includes('side')) warn(at, 'No title. Give it a sentence that says what it shows.');
     if (c.titled && b.title && words(plain(b.title)) < 4) warn(at, `Title "${plain(b.title)}" names a subject. Say the finding.`);
 
+    // A crop is in percent of the picture, so the picture's own size has to be known.
+    if (b) [b].concat(b.items || []).forEach((x) => { if (x && x.crop && !((x.w || b.w) && (x.h || b.h))) warn(at, 'A `crop` needs the picture\'s `w` and `h`.'); });
     switch (b.type) {
       case 'heading': if (b.text && b.text.length > 40) warn(at, `Heading is ${b.text.length} characters. Under 40, and say the point.`); break;
       case 'quote': if (++quotes > 1) warn(at, 'More than one quote. One per page.'); break;

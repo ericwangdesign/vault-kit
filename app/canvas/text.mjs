@@ -51,7 +51,7 @@ export function toText(spec, opts = {}) {
     heading: (b) => push(slack ? bold(b.text) : '## ' + b.text, ''),
     list: (b) => push(...(b.items || []).map((i) => li(md(i))), ''),
     quote: (b) => push('> ' + md(b.md) + (b.cite ? ` (${md(b.cite)})` : ''), ''),
-    aside: (b) => push('> ' + (b.title ? bold(b.title) + ' ' : '') + md(b.md), ''),
+    aside: (b) => push('> ' + (b.tone === 'warn' ? '⚠ ' : b.tone === 'good' ? '✓ ' : '') + (b.title ? bold(b.title) + ' ' : '') + md(b.md), ''),
     figure: (b) => push(title(b), link(b.src, b.alt), ...pins(b.pins), cap(b), ''),
     beforeAfter: (b) => {
       push(title(b));
@@ -103,6 +103,17 @@ export function toText(spec, opts = {}) {
       else for (const r of rows) push(li(r.cells.map((c, j) => (j === 0 ? (r.key ? bold(md(num(c, b))) : md(num(c, b))) : `${cols[j]}: ${md(num(c, b))}`)).join(' · ')));
       push(cap(b), '');
     },
+    carousel: (b) => push(title(b), ...(b.items || []).map((i, n) => `${n + 1}. ${i.label ? md(i.label) + ' ' : ''}${link(i.src, i.alt || 'picture')}${i.note ? ': ' + md(i.note) : ''}`), cap(b), ''),
+    gallery: (b) => push(title(b), ...(b.items || []).map((i) => li(link(i.src, i.label ? md(i.label) : i.alt || 'picture') + (i.note ? ': ' + md(i.note) : ''))), cap(b), ''),
+    map: (b) => push(title(b), ...(b.places || []).map((p, n) => `${n + 1}. ${p.key ? bold(md(p.title)) : md(p.title)}${[p.kind, p.meta].filter(Boolean).length ? ' (' + [p.kind, p.meta].filter(Boolean).map(md).join(', ') + ')' : ''}${p.note ? ': ' + md(p.note) : ''}`), cap(b), ''),
+    sheet: (b) => {
+      const cols = (b.columns || []).map((c) => typeof c === 'string' ? { label: c } : c);
+      push(title(b), ...(b.rows || []).map((r) => li(r.map((v, j) => cols[j] && cols[j].kind === 'check' ? (v ? '✓' : '☐') + ' ' + cols[j].label : (j ? cols[j].label + ': ' : '') + (v ?? '')).join(' · '))), cap(b), '');
+    },
+    cards: (b) => push(title(b), ...(b.items || []).map((i) => li((i.href ? link(i.href, md(i.title)) : (i.key ? bold(md(i.title)) : md(i.title))) +
+      ([i.kind, i.meta].filter(Boolean).length ? ' (' + [i.kind, i.meta].filter(Boolean).map(md).join(', ') + ')' : '') + (i.text ? ': ' + md(i.text) : ''))), cap(b), ''),
+    // In chat the questions are just asked; the answers are made on the page.
+    ask: (b) => push(title(b), ...(b.questions || []).map((q, n) => `${n + 1}. ${md(q.q)}` + ((q.options || []).length ? ' ' + q.options.map((o) => typeof o === 'string' ? md(o) : (o.rec ? bold(md(o.label)) + ' (suggested)' : md(o.label))).join(' / ') : '')), cap(b), ''),
     checklist: (b) => {
       const I = { done: '☑', doing: '◐', open: '☐', blocked: '⊘' }, items = b.items || [];
       push(b.title ? `${bold(md(b.title))} (${items.filter((i) => i.state === 'done').length} of ${items.length} done)` : null,

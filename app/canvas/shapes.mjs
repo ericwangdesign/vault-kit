@@ -21,13 +21,18 @@ export const DOCS = {
   quote: { example: '{ "type": "quote", "md": "The one line worth remembering.", "cite": "optional" }', notes: ['One per page at most.'] },
   aside: {
     example: '{ "type": "aside", "title": "optional", "md": "A side note." }',
-    notes: ['A side note the main text doesn\'t need. On a page that isn\'t a decision, the honest cost and the open question can live here.'],
+    also: ['tone'],
+    notes: [
+      'A side note the main text doesn\'t need. On a page that isn\'t a decision, the honest cost and the open question can live here.',
+      'With `"tone": "good"` or `"warn"` it\'s a callout: a tinted card and a dot by the title. Good for what worked, warn for what to watch. One or two a page.',
+    ],
   },
   figure: {
     example: '{ "type": "figure", "title": "md: what the screen is, in one line", "src": "/media/x.jpg", "srcLight": "/media/x-light.jpg",\n  "w": 1440, "h": 900, "alt": "...", "pins": [ { "x": 32.2, "y": 27.2, "text": "md: this part, and what it\'s for" } ], "caption": "md" }',
     also: ['poster'],
     notes: [
-      'Without `pins`: a picture the text needs; a tall one stops at 560px high and sits centred on a card the column\'s width.',
+      'Without `pins`: a picture the text needs, on the wide track (960). A tall one stops at 80% of the screen\'s height; a tap opens all of it, large.',
+      '`crop`: `{ "x": 0, "y": 0, "w": 50, "h": 40 }` in percent of the picture shows only the part the point is about (needs `w` and `h`). Crop to the panel you\'re talking about, not the whole screen shrunk down. The tap still opens the whole picture. Not with `pins`.',
       'With `pins` it\'s an anatomy: 3 to 5 numbered notes on what the parts are for, listed under the picture. Put a pin beside its target, never on it.',
       '`src` ending .mp4 or .webm plays as a silent loop; `poster` is its still. Less-motion readers get the still and a play button.',
     ],
@@ -44,7 +49,7 @@ export const DOCS = {
   variants: {
     example: '{ "type": "variants", "title": "md: what won, and over what",\n  "cols": 2, "w": 980, "h": 76, "fit": "cover",\n  "items": [ { "label": "md", "note": "md: one line on why it lost or won", "src": "/media/x-1.jpg", "srcLight": "...", "alt": "...", "picked": true },\n             { "label": "md", "md": "a text-only variant, when there\'s no picture", "mark": "gone" } ],\n  "pickLabel": "Picked" }',
     notes: [
-      '2 to 6 items. `w` and `h` set one crop for all (`"fit": "contain"` shows the whole picture). `cols` is 1 to 4; a very wide picture (a tab strip) wants `cols: 1`.',
+      '2 to 6 items. `w` and `h` set one crop for all (`"fit": "contain"` shows the whole picture). Pictures sit 1 or 2 across on the wide track (one on a phone), and each opens large on a tap; text cards go up to 4. A very wide picture (a tab strip) wants `cols: 1`. An item can carry its own `crop`.',
       'At most one `picked`. With none it\'s a set of states. `mark: "gone"` fades a rejected one.',
       '`pickLabel` renames the badge when nothing was chosen: "Shipped", "The main one".',
       'An item with no `src` is a small card: `label`, then `md`, then `note`.',
@@ -100,6 +105,54 @@ export const DOCS = {
   steps: {
     example: '{ "type": "steps", "title": "md", "items": [ { "title": "md", "text": "md", "key": true } ], "caption": "md" }',
     notes: ['A process someone goes through, 3 to 6 steps, no branches. `key` marks the step that matters.'],
+  },
+  cards: {
+    example: '{ "type": "cards", "title": "md: what the set has in common", "cols": 2,\n  "items": [ { "title": "md", "text": "md: one line", "kind": "Bakery", "meta": "7am to 3pm", "href": "https://maps.google.com/?q=...", "src": "/media/x.jpg", "key": true } ] }',
+    also: ['w', 'h', 'alt', 'srcLight'],
+    notes: [
+      'Each card is a thing someone opens: a place, a page, a tool. `href` makes the whole card the link; one off the vault gets an arrow.',
+      '`kind` is the label for what it is (Bakery, Museum, Page, Tool); `meta` a fact beside it (hours, a date, a price). Places on a trip always carry both, and a map link.',
+      'Pictures are optional, all or none. Two across by default, three for text cards when there are more than four, one on a phone. `key` puts one in blue.',
+    ],
+  },
+  carousel: {
+    example: '{ "type": "carousel", "title": "md: what the screens show, in order", "w": 780, "h": 1688,\n  "items": [ { "src": "/media/x.jpg", "srcLight": "/media/x-light.jpg", "alt": "...", "label": "md", "note": "md" } ], "caption": "md" }',
+    notes: [
+      'On the wide track (960). A picture is never under half the track, so phone screens sit two to a view and a wide one fills it; one at a time on a phone, near its real size. A tall screen stops at 80% of the screen\'s height; a tap opens it whole. Swipe, the arrows, or the arrow keys step one at a time; the count says where you are. An item can carry a `crop`.',
+      '`w`/`h` on the block set every picture\'s size; an item can carry its own. Same moment, same size: shoot them with shot.mjs at one width.',
+      'For screens in order. To set options side by side and pick one, use variants.',
+    ],
+  },
+  gallery: {
+    example: '{ "type": "gallery", "title": "md: what the set shows", "cols": 2,\n  "items": [ { "src": "/media/x.jpg", "srcLight": "/media/x-light.jpg", "w": 1440, "h": 900, "alt": "...", "label": "md", "note": "md" } ] }',
+    notes: [
+      'A wall in columns on the wide track, any mix of shapes; give every picture its true `w` and `h` so nothing jumps as it loads. Two columns (or one), one on a phone, edge to edge.',
+      'A picture opens large with its `label` and `note` under it; arrows, arrow keys and Escape. Nothing sits on the picture.',
+    ],
+  },
+  map: {
+    example: '{ "type": "map", "title": "md: what the places add up to", "zoom": 12,\n  "places": [ { "title": "md", "kind": "Bakery", "meta": "7am to 3pm", "lat": 37.7955, "lng": -122.3937, "query": "optional search text", "href": "optional link", "note": "md", "key": true } ] }',
+    notes: [
+      'Real tiles (Esri\'s grey canvas, OpenStreetMap data), dark by night and light by day, no place names (the list names them); the only shape that loads from outside the vault. The map fits every place; `zoom` caps how close it starts.',
+      'Pins are numbered in list order; the list under the map gives each place its name, `kind`, `meta` and a link that opens Google Maps (`query`, then `title`, unless `href` is given). Trip places always carry a kind and a fact.',
+      'Get lat/lng from a real source, never from memory for anything smaller than a city.',
+    ],
+  },
+  sheet: {
+    example: '{ "type": "sheet", "title": "md: what the list is for", "id": "bookings",\n  "columns": [ { "label": "Item", "kind": "text" }, { "label": "Booked", "kind": "check" }, { "label": "Who", "kind": "pick", "options": ["Me", "Dad"] }, { "label": "Cost", "kind": "number", "sum": true, "prefix": "$" } ],\n  "rows": [ ["Flights", true, "Me", 354] ] }',
+    also: ['add'],
+    notes: [
+      'Every cell is editable: `text`, `number`, `check` or `pick` (with `options`). `sum` totals a number column. `"add": false` fixes the rows.',
+      'Saves to `pages/_state/<page>.json` under `id` as rows of values, and what\'s saved replaces `rows` next time. Read that file when the owner says he updated it.',
+    ],
+  },
+  ask: {
+    example: '{ "type": "ask", "title": "md: what Claude needs to know", "id": "hotel",\n  "questions": [ { "id": "area", "q": "md", "kind": "pick", "options": [ { "label": "md", "note": "md", "rec": true } ] },\n    { "id": "musts", "q": "md", "kind": "many", "options": ["md", "md"] },\n    { "id": "budget", "q": "md", "kind": "scale", "min": 100, "max": 400, "step": 25, "value": 200, "unit": "a night" },\n    { "id": "else", "q": "md", "kind": "text", "placeholder": "md" } ] }',
+    notes: [
+      'For what only the owner can answer, on the page, when he has time. Answers save as you go to `pages/_state/<page>.json` under the block\'s `id`; read that file when he says he answered.',
+      '`pick` is one option, `many` any number, `scale` a number on a slider, `text` a line. Options are cards with an optional `note`.',
+      'Have a view: `rec` puts Suggested on the option you\'d pick. One to five questions; more is a form nobody fills.',
+    ],
   },
   live: {
     example: '{ "type": "live", "title": "md: what trying it shows", "template": "picker", "caption": "md" }',
@@ -183,7 +236,7 @@ export const DOCS = {
     notes: ['Depth a skimmer can skip. Never hide the point in one. Two in a row stack as one group.'],
   },
   sources: {
-    example: '{ "type": "sources", "title": "md, optional",\n  "items": [ { "title": "OpenUI", "url": "https://...", "site": "optional", "note": "md: what it showed", "checked": "Oct 12" } ] }',
+    example: '{ "type": "sources", "title": "md, optional",\n  "items": [ { "title": "A2UI", "url": "https://...", "site": "optional", "note": "md: what it showed", "checked": "Oct 12" } ] }',
     notes: ['A letter tile stands in for each favicon, so the page loads nothing from anyone else\'s server. It counts as a section\'s shape.'],
   },
 };
