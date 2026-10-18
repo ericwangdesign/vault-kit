@@ -119,7 +119,7 @@ Every block, its fields and an example are in `reference.md`. The chart rules, w
 - **Real data only.** Say where it came from in `foot` or a caption. A judgement (the matrix) or a typical curve says so.
 - No pie, donut, gauge, radar or dual axes. The ring is the one round chart, for a single value.
 
-One width: text and every shape sit in the same 640 column. Never set a width on a shape. Flows wider than about three columns stack top to bottom, and on a phone three branches become one list with lanes on the right; that's expected. A shape's title always sits above its card, charts included.
+Two widths: text reads at 640; pictures and diagrams take the wide track, 960, on their own. Never set a width on a shape. Screens must be readable on the page: crop a picture to the part the point is about (`crop`), never more than two pictures across, and every picture opens large on a tap. On a phone pictures run edge to edge. Flows wider than about three columns stack top to bottom, and on a phone three branches become one list with lanes on the right; that's expected. A shape's title always sits above its card, charts included.
 
 ## Screenshots and clips
 
