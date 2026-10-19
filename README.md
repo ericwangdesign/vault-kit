@@ -29,6 +29,15 @@ Every note is a `.md` file with a short frontmatter block. Its `type:` decides w
 
 Captures (⌘I, or the box on Today) land in `inbox.md`. `app/skills/sort-inbox/SKILL.md` tells an agent how to file them. Say "sort" to any coding agent pointed at this repo (see `AGENTS.md`), or start the reader with `VAULT_SORTER=1` to let it sort on its own (that one needs the `claude` CLI).
 
+## Notes on the page, and editing in place
+
+Two keys work on every page.
+
+- **⌥N, Pin note:** click a spot, drag an area, or select some words, then say what's wrong. The note lands in `<vault>/fixes/<id>.json` with what an agent needs to find the spot again (the words, a selector, the window size and theme). The pin stays on the page; when the agent is done it shows the agent's one-line reply beside it, and you clear it from there.
+- **⌥E, Edit page:** click any words and type. Enter or clicking away saves into the file the page comes from (a page in `pages/`, or a note's body); Esc puts the words back. Words a page draws with code aren't in its file, so those come back and the tip says to pin a note instead.
+
+On a phone both are in the menu. To have an agent hear about open notes when a session starts, run `VAULT_PATH=<vault> node app/tools/fixes-brief.mjs` from a session-start hook (in Claude Code, a `SessionStart` hook in `.claude/settings.json`). It prints nothing when there are none.
+
 ## Writing canvas
 
 A page of shapes instead of paragraphs: before and after, a flow, a decision, a chart. The agent writes the page as JSON in `<vault>/pages/<slug>.html`; the renderer in `app/canvas/` draws it at `/pages/<slug>.html`. The rules are in `app/skills/writing-canvas/SKILL.md`, every shape's fields in `reference.md` next to it, and `starter-vault/pages/writing-canvas.html` is the system written in itself.

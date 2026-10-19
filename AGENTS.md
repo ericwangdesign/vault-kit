@@ -12,6 +12,11 @@ Two skills live in `app/skills/`. Read the whole SKILL.md before doing either jo
   before calling a page done.
   Pages are things to use: reach for a `live` piece pretty often, and read `<vault>/pages/_state/` when the owner
   says what they picked.
+- **Notes on the page:** the owner pins notes for you with ⌥N; each is `<vault>/fixes/<id>.json`, and
+  `VAULT_PATH=<vault> node app/tools/fixes-brief.mjs` lists the open ones. `path` is the page, `words.text` (with
+  `before` and `after`) or `el.sel` and `el.text` find the spot, `view` gives the window size and theme. Fix the thing,
+  then in the same file set `"status": "done"` and a one-line `"reply"` saying what you changed. Never delete the
+  file: the owner reads the reply on the page and clears it.
 
 Rules that matter most:
 

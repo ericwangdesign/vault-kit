@@ -10,4 +10,4 @@ updated: 2026-10-12
 next: "Replace this with the next real step"
 ---
 
-One plain line about what this project is. Everything else goes below as you go.
+One plain sentence about what this project is. Everything else goes below as you go.
