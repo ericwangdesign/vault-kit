@@ -1,0 +1,33 @@
+{
+  "id": "fmvfhrwnoe0ws",
+  "at": "2026-10-19T16:51:50.676Z",
+  "about": "first-project",
+  "url": "http://localhost:4730/n/first-project",
+  "path": "/n/first-project",
+  "title": "First project",
+  "text": "phone test note",
+  "kind": "pin",
+  "words": null,
+  "point": {
+    "x": 150,
+    "y": 560
+  },
+  "box": null,
+  "el": {
+    "sel": "div:nth-of-type(1) > div > main > article > details > div > p",
+    "tag": "p",
+    "text": "One plain line about what this project is. Everything else goes below as you go.",
+    "rx": 0.391,
+    "ry": 0.328
+  },
+  "view": {
+    "w": 375,
+    "h": 812,
+    "theme": "dark",
+    "sx": 0,
+    "sy": 125
+  },
+  "status": "open",
+  "reply": "",
+  "doneAt": ""
+}
