@@ -419,9 +419,10 @@
                 (o.note ? '<span class="d">' + md(o.note) + '</span>' : '') + '</button>';
             }).join('') + '</div>';
           } else if (kind === 'scale') {
-            var v = q.value != null ? q.value : q.min || 0;
-            body = '<div class="cv-scale"><input type="range" min="' + (+q.min || 0) + '" max="' + (+q.max || 10) + '" step="' + (+q.step || 1) + '" value="' + (+v) + '" aria-label="' + esc(plain(q.q)) + '">' +
-              '<output data-unit="' + esc(q.unit || '') + '"></output></div>';
+            // The vault's Bar slider (SLIDER in style.js), the number riding inside it.
+            var v = q.value != null ? q.value : q.min || 0, lo = +q.min || 0, hi = +q.max || 10, st = +q.step || 1;
+            body = '<label class="cv-scale slider"><span class="slider-head"><span></span><output data-unit="' + esc(q.unit || '') + '"></output></span>' +
+              '<input type="range" min="' + lo + '" max="' + hi + '" step="' + st + '" value="' + (+v) + '" aria-label="' + esc(plain(q.q)) + '"></label>';
           } else {
             body = '<textarea class="cv-ask-text" rows="2" placeholder="' + esc(q.placeholder || '') + '" aria-label="' + esc(plain(q.q)) + '"></textarea>';
           }

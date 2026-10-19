@@ -150,6 +150,25 @@ document.addEventListener('DOMContentLoaded', function () {
   };
   addEventListener('pagehide', flush);
 })();
+
+// Sliders (SLIDER in style.js): the bar fills blue up to the value. CSS can't read a range's value, so --f carries
+// it, 0 to 1: set as each slider lands in the page, on every drag, and whenever a script sets .value.
+(function () {
+  function fill(i) {
+    var lo = i.min === '' ? 0 : +i.min, hi = i.max === '' ? 100 : +i.max;
+    i.style.setProperty('--f', hi > lo ? Math.min(1, Math.max(0, (+i.value - lo) / (hi - lo))) : 0);
+  }
+  var d = Object.getOwnPropertyDescriptor(HTMLInputElement.prototype, 'value');
+  Object.defineProperty(HTMLInputElement.prototype, 'value', { configurable: true, enumerable: d.enumerable, get: d.get,
+    set: function (v) { d.set.call(this, v); if (this.type === 'range') fill(this); } });
+  addEventListener('input', function (e) { if (e.target.type === 'range') fill(e.target); }, true);
+  function sweep(n) {
+    if (n.type === 'range') fill(n);
+    else if (n.querySelectorAll) [].forEach.call(n.querySelectorAll('input[type="range"]'), fill);
+  }
+  new MutationObserver(function (ms) { ms.forEach(function (m) { [].forEach.call(m.addedNodes, sweep); }); })
+    .observe(document.documentElement, { childList: true, subtree: true });
+})();
 `;
 
 /* ---------- shell ---------- */

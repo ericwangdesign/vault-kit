@@ -287,6 +287,9 @@
 .cv-zoom { position: absolute; top: var(--s3); right: var(--s3); z-index: 2; display: flex; gap: var(--s1); padding: var(--s1); border-radius: var(--r-pill); background: var(--raised); cursor: default; }
 .cv-zoom button { min-width: var(--cv-ctl-sm); height: var(--cv-ctl-sm); padding: 0 var(--s2); border: 0; border-radius: var(--r-pill); background: none; font: inherit; font-size: var(--t-sm); color: var(--text-2); cursor: pointer; }
 .cv-zoom button:hover { background: var(--surface); color: var(--text); }
+/* Controls on a page (switch segments, Copy, zoom) are chrome, not words: a drag across the page never selects them, so a
+   copied passage or a note on some words doesn't pick them up. A collapsible's head is a button but its title is words. */
+.frame :is(button, [role="button"], [role="tab"]):not(.cv-coll-head) { user-select: none; -webkit-user-select: none; }
 
 /* ---------- compare ---------- */
 .cv-compare { display: grid; grid-template-columns: minmax(8rem, .8fr) repeat(var(--cols), minmax(0, 1fr)); padding: var(--s1); border-radius: var(--r-md); background: var(--surface); }
@@ -455,9 +458,7 @@ a.cv-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px;
 .cv-opt[aria-pressed="true"] .l { color: var(--accent-ink); }
 .cv-opt .d { font-size: var(--t-sm); line-height: var(--lh-sm); color: var(--text-2); text-wrap: pretty; }
 .cv-opt .rec { display: inline-block; padding: 0 var(--s2); border-radius: var(--r-pill); background: var(--fill); color: var(--text-2); font-size: var(--t-xs); line-height: var(--cv-badge); font-weight: var(--w-medium); }
-.cv-scale { display: flex; align-items: center; gap: var(--s3); margin-top: var(--s2); }
-.cv-scale input { flex: 1; accent-color: var(--accent); }
-.cv-scale output { min-width: 6em; text-align: right; font-size: var(--t-md); line-height: var(--lh-md); font-variant-numeric: tabular-nums; color: var(--text); }
+.cv-scale { margin-top: var(--s2); }  /* the vault's slider, from style.js */
 .cv-ask-text { display: block; width: 100%; margin-top: var(--s2); padding: var(--s2); border: 0; border-radius: var(--cv-r-in-card); background: var(--raised); font: inherit; font-size: var(--t-md); line-height: var(--lh-md); color: var(--text); resize: vertical; }
 .cv-ask-text:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .cv-ask-status:empty { display: none; }
@@ -560,7 +561,7 @@ a.cv-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px;
 
 /* ---------- table: rows of records. No rules between rows: air, and a soft row under the pointer. ---------- */
 .cv-table { padding: var(--s1); border-radius: var(--r-md); background: var(--surface); overflow-x: auto; }
-.cv-table table { width: 100%; border-collapse: separate; border-spacing: 0 2px;  /* 2px between rows, so two highlights never touch */ font-size: var(--t-sm); line-height: var(--lh-sm); font-variant-numeric: tabular-nums; }
+.cv-table table { width: 100%; border-collapse: separate; border-spacing: 0 var(--s2);  /* air between rows: the cells keep equal padding, the gap does the spacing */ margin: calc(-1 * var(--s2)) 0;  /* so the first and last rows sit as close to the card's edge as the sides */ font-size: var(--t-sm); line-height: var(--lh-sm); font-variant-numeric: tabular-nums; }
 .cv-table th { padding: var(--cv-pad-cell); text-align: left; font-weight: var(--w-body); color: var(--text-3); white-space: nowrap; }
 .cv-table td { padding: var(--cv-pad-cell); color: var(--text); vertical-align: top; }
 .cv-table td:first-child { font-weight: var(--w-medium); }
@@ -820,7 +821,7 @@ a.cv-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px;
 .cv-live :is(input:not([type]), input[type="text"], input[type="number"], input[type="search"], select, textarea) { height: var(--cv-ctl); padding: 0 var(--s2); border: 0; border-radius: var(--r-sm); background: var(--raised); font: inherit; font-size: var(--t-sm); color: var(--text); }
 .cv-live textarea { height: auto; padding: var(--s2); }
 .cv-live :is(input, select, textarea, button):focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.cv-live input:is([type="range"], [type="checkbox"], [type="radio"]) { accent-color: var(--accent); }
+.cv-live input:is([type="checkbox"], [type="radio"]) { accent-color: var(--accent); }
 .cv-live label { font-size: var(--t-sm); line-height: var(--lh-sm); color: var(--text-2); }
 .cv-live output { font-variant-numeric: tabular-nums; color: var(--text); }
 .cv-live .row { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s2) var(--s3); }

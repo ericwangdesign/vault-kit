@@ -46,5 +46,5 @@ try {
   console.error(String(e.message || e));
   process.exitCode = 1;
 } finally {
-  chrome && chrome.close();
+  if (chrome) await chrome.close();
 }
