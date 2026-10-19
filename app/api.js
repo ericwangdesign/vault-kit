@@ -5,6 +5,8 @@ import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { execFile } from 'node:child_process';
 import { join } from 'node:path';
 import { allNotes, byName, VAULT } from './vault.js';
+import { listFixes, addFix, patchFix, removeFix } from './fixes.js';
+import { editPage } from './page-edit.js';
 
 // Local, not UTC: a thought dropped at 8pm belongs to that
 // day, and toISOString() would file it under tomorrow.
@@ -210,6 +212,16 @@ export async function api(req, res, url) {
       if (m === 'GET') return json(res, 200, readState(file)), true;
       if (m === 'PATCH' || m === 'POST') { const b = await body(req); return json(res, 200, patchState(page, b)), true; }
     }
+    // Notes on anything (fixes.js): ?path= gives one page's notes, ?open=1 only the ones not done yet.
+    if (p === '/fixes' && m === 'GET') return json(res, 200, listFixes({ path: url.searchParams.get('path') || '', open: !!url.searchParams.get('open') })), true;
+    if (p === '/fixes' && m === 'POST') { const b = await body(req); return json(res, 200, addFix(b)), true; }
+    {
+      const r = /^\/fixes\/([\w-]+)$/.exec(p);
+      if (r && m === 'PATCH') { const b = await body(req); return json(res, 200, patchFix(r[1], b)), true; }
+      if (r && m === 'DELETE') return json(res, 200, removeFix(r[1])), true;
+    }
+    // Words changed on the page itself (⌥E, page-edit.js), written into its file.
+    if (p === '/page-edit' && m === 'POST') { const b = await body(req); return json(res, 200, editPage(b.path, b.edits)), true; }
     if (p === '/whoami' && m === 'GET') return json(res, 200, { ok: true }), true;
     return json(res, 404, { error: 'no such route' }), true;
   } catch (e) {

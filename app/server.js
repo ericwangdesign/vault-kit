@@ -169,6 +169,16 @@ document.addEventListener('DOMContentLoaded', function () {
   new MutationObserver(function (ms) { ms.forEach(function (m) { [].forEach.call(m.addedNodes, sweep); }); })
     .observe(document.documentElement, { childList: true, subtree: true });
 })();
+
+// Notes on anything (⌥N, or Pin note in the menu): notes-layer.js, for Claude to fix. Editing the words in place
+// (⌥E, or Edit page in the menu): edit-layer.js. Both loaded on every vault page.
+(function () {
+  if (navigator.webdriver || self !== top) return;
+  ['/notes-layer.js', '/edit-layer.js'].forEach(function (src) {
+    var s = document.createElement('script'); s.src = src; s.async = true;
+    (document.head || document.documentElement).appendChild(s);
+  });
+})();
 `;
 
 /* ---------- shell ---------- */
@@ -188,6 +198,8 @@ const ICON = {
   search: '<circle cx="11" cy="11" r="7"/><path d="m20 20-3.5-3.5"/>',
   menu: '<path d="M4 7h16M4 12h10M4 17h16"/>',
   plus: '<path d="M12 5v14M5 12h14"/>',
+  pin: '<path d="M12 21s-6-5.5-6-11a6 6 0 0 1 12 0c0 5.5-6 11-6 11z"/><circle cx="12" cy="10" r="2"/>',
+  edit: '<path d="M4 20h4L19 9l-4-4L4 16z"/><path d="m13.5 6.5 4 4"/>',
   type: '<path d="M4 7V5h16v2M9 19h6M12 5v14"/>',
   sun: '<circle cx="12" cy="12" r="4"/><path d="M12 2v2M12 20v2M4.9 4.9l1.4 1.4M17.7 17.7l1.4 1.4M2 12h2M20 12h2M4.9 19.1l1.4-1.4M17.7 6.3l1.4-1.4"/>',
   moon: '<path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"/>',
@@ -231,6 +243,8 @@ function sidebar(notes, here, base) {
       <button class="icon-btn" type="button" data-search aria-label="Search" title="Search  ⌘K">${svg('search')}</button>
     </div>
     <button class="new" type="button" data-capture>${svg('plus')}Capture<kbd>⌘I</kbd></button>
+    <button class="new" type="button" data-fixnote>${svg('pin')}Pin note<kbd>⌥N</kbd></button>
+    <button class="new" type="button" data-editpage>${svg('edit')}Edit page<kbd>⌥E</kbd></button>
     <nav class="nav">
       ${NAV.slice(0, 3).map(item).join('')}
       <div class="nav-label">Library</div>
@@ -1303,6 +1317,11 @@ async function handle(req, res) {
   if (url.pathname === '/vault.css') {
     res.writeHead(200, { 'content-type': 'text/css; charset=utf-8', 'cache-control': 'no-store' });
     res.end(PAGE_CSS);
+    return;
+  }
+  if (url.pathname === '/notes-layer.js' || url.pathname === '/edit-layer.js') {
+    res.writeHead(200, { 'content-type': 'text/javascript; charset=utf-8', 'cache-control': 'no-store' });
+    res.end(readFileSync(fileURLToPath(new URL('.' + url.pathname, import.meta.url))));
     return;
   }
   if (url.pathname === '/vault.js') {
