@@ -380,7 +380,8 @@ export function docs() {
   return L.join('\n');
 }
 // The skill's copy, if it's there. A stale copy is named on every check so it gets regenerated.
-const REF = join(process.env.HOME, '.claude/skills/writing-canvas/reference.md');
+// The kit's own copy of the skill, next to the reader (not ~/.claude, which may hold someone's personal version).
+const REF = join(fileURLToPath(new URL('.', import.meta.url)), '../skills/writing-canvas/reference.md');
 
 /* ---------- the command line ---------- */
 if (fileURLToPath(import.meta.url) === resolve(process.argv[1] || '')) {
