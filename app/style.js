@@ -282,6 +282,7 @@ kbd { font: inherit; font-size: var(--t-sm); color: var(--text-3); }
   font-size: var(--t-md); color: var(--text); text-align: left;
 }
 .new kbd { margin-left: auto; }
+.new + .new { margin-top: -10px; }
 .new:hover { background: color-mix(in srgb, var(--text) 11%, transparent); }
 .nav { display: flex; flex-direction: column; gap: 1px; }
 .nav a { display: flex; align-items: center; gap: 8px; height: 32px; padding: 0 8px; border-radius: var(--r-sm); color: var(--text-2); font-size: var(--t-md); }
