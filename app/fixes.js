@@ -20,7 +20,7 @@ export function listFixes({ path = '', open = false } = {}) {
     .sort((a, b) => String(a.at).localeCompare(String(b.at)));
 }
 
-// What a note is about: the entry a /pages/ page sits in, the note a /n/ page shows, else the vault itself.
+// What a note is about: the page, or the entry a /pages/ page sits in, the note a /n/ page shows, else the vault itself.
 function aboutOf(path) {
   const n = /^\/n\/([^/?#]+)/.exec(path);
   if (n) return decodeURIComponent(n[1]);
@@ -28,6 +28,8 @@ function aboutOf(path) {
     try {
       const f = pageFile(path.split(/[?#]/)[0]);
       const rel = f && relative(VAULT, dirname(f));
+      // A page straight in pages/ is about itself; one inside an entry's folder is about that entry.
+      if (rel === 'pages') return basename(f).replace(/\.html?$/, '');
       if (rel && !rel.startsWith('..')) return basename(rel) || 'vault';
     } catch {}
   }
