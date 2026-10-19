@@ -150,7 +150,7 @@ export const DOCS = {
     example: '{ "type": "ask", "title": "md: what Claude needs to know", "id": "hotel",\n  "questions": [ { "id": "area", "q": "md", "kind": "pick", "options": [ { "label": "md", "note": "md", "rec": true } ] },\n    { "id": "musts", "q": "md", "kind": "many", "options": ["md", "md"] },\n    { "id": "budget", "q": "md", "kind": "scale", "min": 100, "max": 400, "step": 25, "value": 200, "unit": "a night" },\n    { "id": "else", "q": "md", "kind": "text", "placeholder": "md" } ] }',
     notes: [
       'For what only the owner can answer, on the page, when he has time. Answers save as you go to `pages/_state/<page>.json` under the block\'s `id`; read that file when he says he answered.',
-      '`pick` is one option, `many` any number, `scale` a number on a slider, `text` a line. Options are cards with an optional `note`.',
+      '`pick` is one option, `many` any number, `scale` a number on the vault\'s Bar slider, `text` a line. Options are cards with an optional `note`.',
       'Have a view: `rec` puts Suggested on the option you\'d pick. One to five questions; more is a form nobody fills.',
     ],
   },
@@ -159,7 +159,7 @@ export const DOCS = {
     also: ['src', 'h', 'alt', 'bare'],
     notes: [
       'The piece is the page\'s own HTML: `<template id="picker">markup and <script></template>` anywhere in the body, named by `template`. Its scripts run in order once the page is drawn; `document.currentScript.closest(\'.cv-live\')` is its own block, so query inside that, never the whole document.',
-      'Write plain elements: `button`, `input`, `select`, `label`, `output` already wear the canvas\'s look, `.row` lays controls in a line. Colours, sizes and space come from the vault\'s tokens (`var(--accent)`, `var(--text-3)`, `var(--raised)`, `var(--s3)`, `var(--t-sm)`), never a literal.',
+      'Write plain elements: `button`, `input`, `select`, `label`, `output` already wear the canvas\'s look, `.row` lays controls in a line. A slider is `<label class="slider"><span class="slider-head">Name<output>40</output></span><input type="range"></label>`, update the `output` on `input` yourself. As is it\'s the Bar: a soft blue fill under the name and value, for an amount you set (size, opacity, budget). Add `field` for a panel of settings stacked together: Figma\'s, name, a thin track with a small thumb and the number in a box on one row. Colours, sizes and space come from the vault\'s tokens (`var(--accent)`, `var(--text-3)`, `var(--raised)`, `var(--s3)`, `var(--t-sm)`), never a literal.',
       'A piece too big for a template is a page of its own: `"src": "/pages/<slug>/"`. The frame grows to the page\'s height (or `h` in px) and follows day and night. `alt` names it for a screen reader.',
       'A piece with its own ground (a canvas, a map) takes `"bare": true`: no card, no padding.',
       'What the reader does on it can stay: `await vault.state.get(key)` and `vault.state.set(key, value)` save to the vault, same on every device, and Claude reads them from `pages/_state/`.',

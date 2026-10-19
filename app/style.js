@@ -198,9 +198,56 @@ const PROSE = `
 .prose img { max-width: 100%; height: auto; border-radius: var(--r-sm); }
 `;
 
+/* Two sliders, one markup:
+     <label class="slider"><span class="slider-head">Size<output>14</output></span><input type="range" ...></label>
+   - Bar (.slider): the bar is the slider. A soft blue fill grows under the name and the value, which ride inside it.
+     For an amount on a page: a size, an opacity, a budget. A bare <input type="range"> in a canvas piece draws as one.
+   - Field (.slider.field): Figma's. Name, a thin track with a small white thumb, and the number in a box, on one row.
+     For a panel of settings, where several sit stacked and a bar each would shout.
+   The bar is the input itself: its own background is the fill and the thumb has no width, so pressing anywhere jumps
+   there and drags. CSS can't read a range's value, so /vault.js (THEME_JS in server.js) keeps --f (0 to 1) in step. */
+const SLIDER = `
+.slider { position: relative; display: block; }
+:is(.slider, .cv-live, .cv-scale) input[type="range"] {
+  -webkit-appearance: none; appearance: none; display: block; width: 100%; height: 36px; margin: 0; padding: 0;
+  border: 0; border-radius: var(--r-sm); background: linear-gradient(to right, var(--accent-soft) calc(var(--f, 0) * 100%), var(--fill) 0);
+  cursor: pointer; touch-action: pan-y; -webkit-tap-highlight-color: transparent;
+}
+:is(.slider, .cv-live, .cv-scale) input[type="range"]::-webkit-slider-runnable-track { height: 100%; background: none; }
+:is(.slider, .cv-live, .cv-scale) input[type="range"]::-webkit-slider-thumb { -webkit-appearance: none; width: 0; height: 100%; border: 0; background: none; box-shadow: none; }
+:is(.slider, .cv-live, .cv-scale) input[type="range"]::-moz-range-track { height: 100%; background: none; }
+:is(.slider, .cv-live, .cv-scale) input[type="range"]::-moz-range-progress { background: none; }
+:is(.slider, .cv-live, .cv-scale) input[type="range"]::-moz-range-thumb { width: 0; height: 100%; border: 0; background: none; opacity: 0; }
+:is(.slider, .cv-live, .cv-scale) input[type="range"]:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
+:is(.slider, .cv-live, .cv-scale) input[type="range"]:disabled { opacity: .4; cursor: default; }
+.slider-head { position: absolute; inset: 0; display: flex; align-items: center; justify-content: space-between; gap: var(--s3); padding: 0 var(--s3); font-size: var(--t-md); line-height: var(--lh-md); color: var(--text-2); pointer-events: none; }
+.slider-head output { color: var(--text); font-variant-numeric: tabular-nums; }
+/* Field: one row of three. The head steps aside (display: contents) so its name and number sit either side of the track. */
+.slider.field { display: grid; grid-template-columns: 64px minmax(0, 1fr) 52px; align-items: center; gap: var(--s3); font-size: var(--t-sm); line-height: var(--lh-sm); color: var(--text-2); }
+.slider.field .slider-head { display: contents; }
+.slider.field input[type="range"] { order: 1; height: 28px; border-radius: 0; background: none; --thumb: 12px; }
+.slider.field output { order: 2; display: grid; place-items: center; height: 28px; border-radius: var(--r-sm); background: var(--fill); color: var(--text); }
+.slider.field input[type="range"]::-webkit-slider-runnable-track { height: 4px; border-radius: var(--r-pill); background: linear-gradient(to right, var(--accent) calc(var(--thumb) / 2 + (100% - var(--thumb)) * var(--f, 0)), var(--fill) 0); }
+.slider.field input[type="range"]::-webkit-slider-thumb { width: var(--thumb); height: var(--thumb); margin-top: -4px; border-radius: 50%; background: #fff; box-shadow: 0 0 0 .5px rgba(0,0,0,.1), 0 1px 3px rgba(0,0,0,.25); transition: transform .15s cubic-bezier(.2,0,0,1); }
+.slider.field input[type="range"]::-moz-range-track { height: 4px; border-radius: var(--r-pill); background: var(--fill); }
+.slider.field input[type="range"]::-moz-range-progress { height: 4px; border-radius: var(--r-pill); background: var(--accent); }
+.slider.field input[type="range"]::-moz-range-thumb { width: var(--thumb); height: var(--thumb); border-radius: 50%; background: #fff; opacity: 1; box-shadow: 0 0 0 .5px rgba(0,0,0,.1), 0 1px 3px rgba(0,0,0,.25); transition: transform .15s cubic-bezier(.2,0,0,1); }
+.slider.field input[type="range"]:active::-webkit-slider-thumb { transform: scale(1.25); }
+.slider.field input[type="range"]:active::-moz-range-thumb { transform: scale(1.25); }
+.slider.field input[type="range"]:focus-visible { outline: none; }
+.slider.field input[type="range"]:focus-visible::-webkit-slider-thumb { box-shadow: 0 0 0 3px color-mix(in srgb, var(--accent) 40%, transparent), 0 1px 3px rgba(0,0,0,.25); }
+/* A finger needs more to hold: Apple's 44 for the bar, a bigger thumb on the field. */
+@media (pointer: coarse) {
+  :is(.slider, .cv-live, .cv-scale) input[type="range"] { height: 44px; }
+  .slider.field input[type="range"] { height: 44px; --thumb: 20px; }
+  .slider.field input[type="range"]::-webkit-slider-thumb { margin-top: -8px; }
+}
+@media (prefers-reduced-motion: reduce) { .slider.field input[type="range"]::-webkit-slider-thumb { transition: none; } }
+`;
+
 /* ---------- the reader's own pages ---------- */
 
-export const CSS = TOKENS + PROSE + `
+export const CSS = TOKENS + PROSE + SLIDER + `
 html { background: var(--panel); }
 @media (max-width: 1023px) { html { background: var(--bg); } }  /* no sidebar here: overscroll shows the page, not a grey strip */
 svg.i { width: 16px; height: 16px; fill: none; stroke: currentColor; stroke-width: 1.6; stroke-linecap: round; stroke-linejoin: round; flex: none; }
@@ -817,7 +864,7 @@ img.doc-mark { width: 40px; height: 40px; border-radius: var(--r-sm); margin-bot
 /* ---------- /vault.css, for the standalone pieces in /pages/ ---------- */
 // The older furniture, redrawn in the new tokens. The column, the way home, the day/night
 // switch, the note head, list rows and the section rail work as they always did.
-export const PAGE_CSS = TOKENS + LEGACY + PROSE + `
+export const PAGE_CSS = TOKENS + LEGACY + PROSE + SLIDER + `
 body { font-size: var(--t-md); line-height: 1.43; }
 .frame { position: relative; max-width: 680px; margin: 0 auto; padding: 80px 0 96px; }
 .frame > .up { position: absolute; top: 40px; left: 0; display: inline-flex; align-items: center; gap: 6px; height: 28px; padding: 0 11px 0 9px; margin-left: -9px; border-radius: var(--r-pill); color: var(--text-2); font-size: var(--t-md); }

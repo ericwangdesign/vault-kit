@@ -43,6 +43,17 @@ export async function launch() {
     await sleep(250);
     if (load) await walk();
   }
-  function close() { try { ws.close(); } catch {} proc.kill(); try { rmSync(dir, { recursive: true, force: true }); } catch {} }
+  // Chrome keeps writing its profile until it has exited, so the folder is deleted after that, not right after kill():
+  // deleting it straight away left a cvshot-* folder behind on every run. A Chrome that won't quit gets 3 s.
+  const rm = () => { try { rmSync(dir, { recursive: true, force: true }); } catch {} };
+  function close() {
+    try { ws.close(); } catch {}
+    if (proc.exitCode !== null || proc.signalCode !== null) return Promise.resolve(rm());
+    return new Promise((r) => {
+      const t = setTimeout(() => { try { proc.kill('SIGKILL'); } catch {} }, 3000);
+      proc.once('exit', () => { clearTimeout(t); rm(); r(); });
+      proc.kill();
+    });
+  }
   return { send, evalJs, open, walk, close };
 }

@@ -79,6 +79,6 @@ export async function layout(urls, { widths = WIDTHS } = {}) {
         for (const p of found) { const k = p.at + p.msg; if (!seen.has(k)) { seen.add(k); res[url].push({ w, ...p }); } }
       }
     }
-  } finally { chrome.close(); }
+  } finally { await chrome.close(); }
   return res;
 }
