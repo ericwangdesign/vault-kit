@@ -2,7 +2,7 @@
 // POSTs one here; this writes it into the vault as a markdown note with its pixels beside it.
 import { mkdirSync, writeFileSync, readFileSync, renameSync, existsSync } from 'node:fs';
 import { join } from 'node:path';
-import { spawn } from 'node:child_process';
+import { runAgent } from './agents.js';
 import { VAULT } from './vault.js';
 
 const slug = (s) => s.toLowerCase().replace(/[^a-z0-9]+/g, '-').replace(/^-|-$/g, '').slice(0, 40);

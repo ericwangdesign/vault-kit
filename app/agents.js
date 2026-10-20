@@ -20,7 +20,3 @@ export function runAgent(claudeArgs, prompt, opts) {
   return child;
 }
 
-export const agentName = () => {
-  const v = (process.env.VAULT_AGENT || '').trim().split(/\s+/)[0];
-  return !v || v === 'claude' ? 'Claude' : v.charAt(0).toUpperCase() + v.slice(1);
-};

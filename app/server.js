@@ -1064,7 +1064,7 @@ function galleryPage(notes, { own = false } = {}) {
 // A note is written for you. Anything under a trailing "## For Claude" heading is for sessions,
 // and the reader folds it away so the page reads as yours, not as a briefing.
 function splitForClaude(body) {
-  const m = /^## For Claude\s*$/m.exec(body);
+  const m = /^## For (Claude|agents|the agent)\s*$/m.exec(body);
   return m ? [body.slice(0, m.index).trimEnd(), body.slice(m.index + m[0].length).trim()] : [body, ''];
 }
 

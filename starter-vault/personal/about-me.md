@@ -7,4 +7,4 @@ created: 2026-10-12
 updated: 2026-10-12
 ---
 
-Write who you are, what you do, and how you like Claude to work with you. Sessions read this first.
+Write who you are, what you do, and how you like your agent to work with you. Sessions read this first.
