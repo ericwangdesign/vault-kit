@@ -56,8 +56,8 @@ export const TOKENS = `
   --ok: #5cc98b;
   --bad: #ff7a6b;
 
-  --btn: #f2f2f2;
-  --btn-text: #0f0f0f;
+  --btn: var(--accent-soft);     /* primaries are the blue tint, never white (Eric, Oct 19) */
+  --btn-text: var(--accent-ink);
   --scrim: rgba(0,0,0,.55);
   --shadow: none;
   --shadow-lg: 0 0 0 1px rgba(255,255,255,.02), 0 12px 32px rgba(0,0,0,.35);
@@ -121,8 +121,8 @@ export const TOKENS = `
   --accent-ink: #0066cc;
   --ok: #15803d;
   --bad: #e5484d;
-  --btn: #0f0f0f;
-  --btn-text: #ffffff;
+  --btn: var(--accent-soft);
+  --btn-text: var(--accent);
   --scrim: rgba(0,0,0,.18);
   --shadow: none;            /* cards read by their fill alone, day and night */
   --shadow-lg: 0 1px 3px rgba(0,0,0,.05), 0 8px 24px rgba(0,0,0,.07);
