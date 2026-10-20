@@ -70,7 +70,7 @@ export const CATALOG = {
 
   // Something to use. When trying it says the point better than any picture of it: a slider, a picker, a toy, a tool.
   live: { group: 'use', titled: true, need: [], asks: 'What happens when I try it?', when: 'The point lands by doing: drag, tune, pick, filter, play. A page\'s own <template>, or a page of its own in a frame.' },
-  ask: { group: 'use', titled: true, need: ['questions'], asks: 'What do I need from you?', when: '1 to 5 things only the owner can answer: a pick, a few picks, a number, a line. Answers save to the vault for Claude to read. Mark the option you would pick with `rec`.' },
+  ask: { group: 'use', titled: true, need: ['questions'], asks: 'What do I need from you?', when: '1 to 5 things only the owner can answer: a pick, a few picks, a number, a line. Answers save to the vault for the agent to read. Mark the option you would pick with `rec`.' },
   sheet: { group: 'use', titled: true, need: ['columns'], asks: 'Can I change it as I go?', when: 'A list the owner keeps up himself on the page: bookings, a packing list, a review, a budget. Text, numbers, ticks and picks; rows added and removed; saved to the vault. Only to read is a table.' },
 };
 const SHAPES = Object.keys(CATALOG).filter((k) => CATALOG[k].group !== 'words');

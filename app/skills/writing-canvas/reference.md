@@ -47,7 +47,7 @@ Slots are the minimum, in order. Extra shapes may sit between them.
 | What is it made of, by size? | `treemap` | 5 to 15 parts of one whole, or parts with parts. 2 to 4 parts is a share chart. |
 | Which is biggest? What share? Up or down? | `chart` | bar: 3 to 12 amounts. share: 2 to 4 parts of a whole. ring: one value out of a whole. funnel: 3 to 8 steps people drop out of, in order. line: 5+ points in time. |
 | What happens when I try it? | `live` | The point lands by doing: drag, tune, pick, filter, play. A page's own <template>, or a page of its own in a frame. |
-| What do I need from you? | `ask` | 1 to 5 things only the owner can answer: a pick, a few picks, a number, a line. Answers save to the vault for Claude to read. Mark the option you would pick with `rec`. |
+| What do I need from you? | `ask` | 1 to 5 things only the owner can answer: a pick, a few picks, a number, a line. Answers save to the vault for the agent to read. Mark the option you would pick with `rec`. |
 | Can I change it as I go? | `sheet` | A list the owner keeps up himself on the page: bookings, a packing list, a review, a budget. Text, numbers, ticks and picks; rows added and removed; saved to the vault. Only to read is a table. |
 
 Stay prose when the answer is one or two sentences, or an opinion with no structure. One or two numbers are a sentence, not a chart.
@@ -485,16 +485,16 @@ The point lands by doing: drag, tune, pick, filter, play. A page's own <template
 - Write plain elements: `button`, `input`, `select`, `label`, `output` already wear the canvas's look, `.row` lays controls in a line. A slider is `<label class="slider"><span class="slider-head">Name<output>40</output></span><input type="range"></label>`, update the `output` on `input` yourself. As is it's the Bar: a soft blue fill under the name and value, for an amount you set (size, opacity, budget). Add `field` for a panel of settings stacked together: Figma's, name, a thin track with a small thumb and the number in a box on one row. Colours, sizes and space come from the vault's tokens (`var(--accent)`, `var(--text-3)`, `var(--raised)`, `var(--s3)`, `var(--t-sm)`), never a literal.
 - A piece too big for a template is a page of its own: `"src": "/pages/<slug>/"`. The frame grows to the page's height (or `h` in px) and follows day and night. `alt` names it for a screen reader.
 - A piece with its own ground (a canvas, a map) takes `"bare": true`: no card, no padding.
-- What the reader does on it can stay: `await vault.state.get(key)` and `vault.state.set(key, value)` save to the vault, same on every device, and Claude reads them from `pages/_state/`.
+- What the reader does on it can stay: `await vault.state.get(key)` and `vault.state.set(key, value)` save to the vault, same on every device, and the agent reads them from `pages/_state/`.
 - Under 390px wide it still works by touch, with no hover-only controls. It never needs a sign-in, a key or a network call outside the vault.
 - Also takes: `src`, `h`, `alt`, `bare`.
 
 #### `ask`: What do I need from you?
 
-1 to 5 things only the owner can answer: a pick, a few picks, a number, a line. Answers save to the vault for Claude to read. Mark the option you would pick with `rec`.
+1 to 5 things only the owner can answer: a pick, a few picks, a number, a line. Answers save to the vault for the agent to read. Mark the option you would pick with `rec`.
 
 ```json
-{ "type": "ask", "title": "md: what Claude needs to know", "id": "hotel",
+{ "type": "ask", "title": "md: what the agent needs to know", "id": "hotel",
   "questions": [ { "id": "area", "q": "md", "kind": "pick", "options": [ { "label": "md", "note": "md", "rec": true } ] },
     { "id": "musts", "q": "md", "kind": "many", "options": ["md", "md"] },
     { "id": "budget", "q": "md", "kind": "scale", "min": 100, "max": 400, "step": 25, "value": 200, "unit": "a night" },
