@@ -27,7 +27,7 @@ Every note is a `.md` file with a short frontmatter block. Its `type:` decides w
 | `user`, `feedback` | About |
 | `todo` | To do (`todo.md`, plain `- [ ]` lines) |
 
-Captures (⌘I, or the box on Today) land in `inbox.md`. `app/skills/sort-inbox/SKILL.md` tells an agent how to file them. Say "sort" to any coding agent pointed at this repo (see `AGENTS.md`), or start the reader with `VAULT_SORTER=1` to let it sort on its own (that one needs the `claude` CLI).
+Captures (⌘I, or the box on Today) land in `inbox.md`. `app/skills/sort-inbox/SKILL.md` tells an agent how to file them. Say "sort" to any coding agent pointed at this repo (see `AGENTS.md`), or start the reader with `VAULT_SORTER=1` to let it sort on its own. It runs Claude Code unless `VAULT_AGENT` picks another: `gemini`, `codex`, or any command that takes the prompt on stdin.
 
 ## Notes on the page, and editing in place
 
