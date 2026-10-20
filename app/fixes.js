@@ -58,7 +58,7 @@ export function addFix(b, { about = '' } = {}) {
   };
   mkdirSync(FIX_DIR, { recursive: true });
   writeFileSync(fileOf(id), JSON.stringify(n, null, 2) + '\n');
-  commit(`note for Claude: ${n.about}`);
+  commit(`note for the agent: ${n.about}`);
   return n;
 }
 
@@ -69,13 +69,13 @@ export function patchFix(id, b) {
   if (b.status === 'open' || b.status === 'done') { n.status = b.status; n.doneAt = b.status === 'done' ? new Date().toISOString() : ''; }
   if (typeof b.reply === 'string') n.reply = clean(b.reply, 600);
   writeFileSync(f, JSON.stringify(n, null, 2) + '\n');
-  commit(`note for Claude: ${n.about}, ${n.status}`);
+  commit(`note for the agent: ${n.about}, ${n.status}`);
   return n;
 }
 
 export function removeFix(id) {
   const f = fileOf(id);
   if (existsSync(f)) unlinkSync(f);
-  commit('note for Claude cleared');
+  commit('note for the agent cleared');
   return { ok: true };
 }

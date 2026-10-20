@@ -124,9 +124,9 @@ export function setCuttingFolder(name, folder) {
 }
 
 /* ---------- style guide ---------- */
-// A folder of cuttings, read by Claude as one set: what the buildings in them have in common,
-// written back as a note. Runs through the `claude` CLI so it uses the subscription already signed
-// in on this machine — no API key to keep. One run per folder at a time; state lives in memory, because
+// A folder of cuttings, read by an agent as one set: what the buildings in them have in common,
+// written back as a note. Runs through the agent's CLI (Claude Code, or VAULT_AGENT) so it uses the
+// subscription already signed in on this machine — no API key to keep. One run per folder at a time; state lives in memory, because
 // a run that dies with the server is simply run again.
 
 const jobs = new Map(); // folder → { state: 'running' | 'done' | 'failed', started, error, guide }
@@ -160,21 +160,19 @@ export function analyzeFolder(folder, cuts, focus) {
 
   const job = { state: 'running', started: Date.now(), count: shots.length };
   jobs.set(f, job);
-  const child = spawn('claude', ['-p', '--allowedTools', 'Read', '--add-dir', root, '--output-format', 'text'], {
+  const child = runAgent(['-p', '--allowedTools', 'Read', '--add-dir', root, '--output-format', 'text'], prompt, {
     cwd: root,
     env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/bin:/bin:${process.env.PATH || ''}` },
-    stdio: ['pipe', 'pipe', 'pipe'],
   });
   let out = '', err = '';
   child.stdout.on('data', (d) => (out += d));
   child.stderr.on('data', (d) => (err += d));
-  child.stdin.end(prompt);
   const timer = setTimeout(() => child.kill('SIGTERM'), 15 * 60 * 1000);
   child.on('error', (e) => { clearTimeout(timer); Object.assign(job, { state: 'failed', error: e.message }); });
   child.on('close', (code) => {
     clearTimeout(timer);
     const md = out.trim();
-    if (code !== 0 || !md) return Object.assign(job, { state: 'failed', error: (err || out || `claude exited ${code}`).trim().slice(-400) });
+    if (code !== 0 || !md) return Object.assign(job, { state: 'failed', error: (err || out || `the agent exited ${code}`).trim().slice(-400) });
     try { Object.assign(job, { state: 'done', guide: writeGuide(f, shots, subject, md) }); }
     catch (e) { Object.assign(job, { state: 'failed', error: e.message }); }
   });

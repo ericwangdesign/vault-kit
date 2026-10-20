@@ -122,13 +122,13 @@
       body: JSON.stringify({ path: PATH, edits: changed.map(function (r) { return { old: r.old, new: r.now, before: r.before, after: r.after }; }) }) })
       .then(function (r) { return r.json().then(function (j) { if (!r.ok) throw new Error(j.error || r.status); return j; }); })
       .then(function (j) {
-        if (!j.missed.length) return say(j.built ? 'Saved · a script builds this page, so ask Claude to carry it into the script' : 'Saved', j.built ? 5000 : 1600);
+        if (!j.missed.length) return say(j.built ? 'Saved · a script builds this page, so ask your agent to carry it into the script' : 'Saved', j.built ? 5000 : 1600);
         // What couldn't be found goes back to how it was, so the page never shows words the file doesn't have.
         if (!j.saved) el.innerHTML = c.html;
         else j.missed.forEach(function (m) { var r = changed[m.i]; if (r.node.isConnected) r.node.data = r.old; });
         var why = j.missed[0].why;
-        say((j.saved ? 'Saved some. ' : '') + (why === 'in the file more than once' ? 'Those words are in the file twice, so ⌥N to ask Claude'
-          : why === 'needs quoting' ? 'That one needs Claude: ⌥N' : 'Those words are drawn by code, so ⌥N to ask Claude'), 4500);
+        say((j.saved ? 'Saved some. ' : '') + (why === 'in the file more than once' ? 'Those words are in the file twice, so ⌥N to ask your agent'
+          : why === 'needs quoting' ? 'That one needs your agent: ⌥N' : 'Those words are drawn by code, so ⌥N to ask your agent'), 4500);
       })
       .catch(function (e) { el.innerHTML = c.html; say(String(e.message || '').indexOf('made by the vault') >= 0 ? e.message : 'Didn’t save. Try again.', 3500); });
   }
