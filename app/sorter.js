@@ -3,7 +3,7 @@
 // - A capture starts a short quiet timer. More captures restart it, so a burst of five
 //   thoughts is one sort, not five.
 // - When the timer ends, and only if inbox.md still has lines, one headless Claude run
-//   (the cheap model) follows the sort-inbox skill.
+//   (the cheap model) follows the sort-inbox skill. VAULT_AGENT runs another agent (agents.js).
 // - One run at a time. Anything that lands mid-run gets its own run afterwards.
 // - A cheap file check every 30 minutes catches anything a failed run left behind.
 //   Reading a file costs nothing; the model only runs when there's something to sort.
@@ -11,19 +11,19 @@
 //   sorters editing the same inbox is how the sync jams.
 // - A run that leaves the inbox exactly as it found it is not tried again until a new
 //   capture changes it, so a line that can't be filed doesn't cost a run every two minutes.
-import { spawn, execFileSync } from 'node:child_process';
+import { execFileSync } from 'node:child_process';
 import { appendFileSync, existsSync, readFileSync, writeFileSync } from 'node:fs';
 import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
 import { readInbox } from './api.js';
 import { VAULT } from './vault.js';
+import { runAgent } from './agents.js';
 
 const QUIET_MS = 2 * 60 * 1000;
 const SWEEP_MS = 30 * 60 * 1000;
 const MODEL = 'haiku';
 const ON = process.env.VAULT_SORTER === '1';
-const CLAUDE = process.env.CLAUDE_BIN || 'claude';
 const LOG = process.env.VAULT_SORT_LOG || join(homedir(), 'vault-sort.log');
 // The skill travels with the reader, so whichever machine sorts has the same instructions.
 const SKILL_DIR = fileURLToPath(new URL('./skills/sort-inbox/', import.meta.url));
@@ -47,16 +47,15 @@ function run() {
   running = true;
   const before = inboxNow();
   log(`sorting ${readInbox().length} capture(s)`);
-  const child = spawn(CLAUDE, [
-    '-p', PROMPT,
+  const child = runAgent([
+    '-p',
     '--model', MODEL,
     '--permission-mode', 'acceptEdits',
     '--add-dir', SKILL_DIR,
     '--allowedTools', 'Read', 'Edit', 'Write', 'Glob', 'Grep', 'Bash(git add:*)', 'Bash(git commit:*)', 'Bash(git status:*)', 'Bash(ls:*)', 'Bash(mkdir:*)',
-  ], {
+  ], PROMPT, {
     cwd: VAULT,
     env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:${process.env.PATH || ''}` },
-    stdio: ['ignore', 'pipe', 'pipe'],
   });
   let out = '';
   // A hung run would block every sort after it; ten minutes is far past a normal one (~30s).

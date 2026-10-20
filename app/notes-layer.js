@@ -214,7 +214,7 @@
       card.querySelector('[data-x="save"]').disabled = true;
       fetch(API, { method: 'POST', credentials: 'same-origin', headers: { 'content-type': 'application/json' }, body: JSON.stringify(draft) })
         .then(function (r) { if (!r.ok) throw new Error(r.status); return r.json(); })
-        .then(function (n) { notes.push(n); close(); draw(); tip('Saved for Claude', 1800); })
+        .then(function (n) { notes.push(n); close(); draw(); tip('Saved for your agent', 1800); })
         .catch(function () { card.querySelector('[data-x="save"]').disabled = false; tip('Didn’t save. Try again.', 2500); });
     };
     ta.addEventListener('keydown', function (e) {
@@ -232,7 +232,7 @@
     card.innerHTML = what(n) +
       '<div class="fx-text">' + esc(n.text) + '</div>' +
       (n.reply ? '<div class="fx-reply">' + esc(n.reply) + '</div>' : '') +
-      '<div class="fx-row"><span class="fx-st">' + (done ? 'Done' : 'Waiting for Claude') + '</span>' +
+      '<div class="fx-row"><span class="fx-st">' + (done ? 'Done' : 'Waiting for your agent') + '</span>' +
       (done ? '<button type="button" class="fx-b" data-x="reopen">Reopen</button><button type="button" class="fx-b go" data-x="clear">Clear</button>'
         : '<button type="button" class="fx-b" data-x="clear">Delete</button>') + '</div>';
     if (n.kind === 'area') box(s.x, s.y, s.w || 0, s.h || 0);
