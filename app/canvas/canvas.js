@@ -412,7 +412,7 @@
         '<div class="cv-ask-card">' + (b.questions || []).map(function (q, n) {
           var qid = esc(q.id || 'q' + (n + 1)), kind = q.kind || 'pick', body;
           if (kind === 'pick' || kind === 'many') {
-            body = '<div class="cv-opts" role="group" data-kind="' + kind + '">' + (q.options || []).map(function (o) {
+            body = '<div class="cv-opts" role="group" data-kind="' + kind + '" data-n="' + (q.options || []).length + '">' + (q.options || []).map(function (o) {
               o = typeof o === 'string' ? { label: o } : o;
               return '<button type="button" class="cv-opt" aria-pressed="false" data-v="' + esc(plain(o.label)) + '">' +
                 '<span class="l">' + md(o.label) + (o.rec ? '<span class="rec">Suggested</span>' : '') + '</span>' +

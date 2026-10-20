@@ -450,6 +450,7 @@ a.cv-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px;
 .cv-q-label { font-size: var(--t-md); line-height: var(--lh-md); font-weight: var(--w-medium); color: var(--text); }
 .cv-q-note { margin-top: var(--s0); font-size: var(--t-sm); line-height: var(--lh-sm); color: var(--text-3); }
 .cv-opts { display: grid; grid-template-columns: repeat(auto-fill, minmax(168px, 1fr)); gap: var(--s2); margin-top: var(--s2); }
+.cv-opts[data-n="4"] { grid-template-columns: repeat(2, minmax(0, 1fr)); } /* 2 and 2, never 3 and one left alone */
 .cv-opt { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s0); padding: var(--cv-pad-box); border: 0; border-radius: var(--cv-r-in-card); background: var(--raised); font: inherit; text-align: left; color: var(--text); cursor: pointer; transition: background .15s, box-shadow .15s; }
 .cv-opt:hover { background: color-mix(in srgb, var(--text) 8%, var(--raised)); }
 .cv-opt:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
@@ -463,7 +464,7 @@ a.cv-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px;
 .cv-ask-text:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
 .cv-ask-status:empty { display: none; }
 .cv-ask-status { margin-top: calc(var(--s3) * -1); font-size: var(--t-sm); line-height: var(--lh-sm); color: var(--text-3); }
-@media (max-width: 640px) { .cv-ask-card { padding: var(--s4); } .cv-opts { grid-template-columns: minmax(0, 1fr); } }
+@media (max-width: 640px) { .cv-ask-card { padding: var(--s4); } .cv-opts, .cv-opts[data-n="4"] { grid-template-columns: minmax(0, 1fr); } }
 
 /* ---------- flow: states joined by arrows ----------
    Boxes are placed on a grid by canvas.js (column = rank, row = order); the arrows are one SVG laid over them. */
