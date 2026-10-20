@@ -1,6 +1,11 @@
 // A rolling list, kept as plain `- [ ]` lines in one note so it stays readable and
 // editable by conversation like everything else. Checking a box rewrites that line
 // and nothing else in the file.
+//
+// The list is split by `## ` headings into how the day gets spent: Today (a few, picked in
+// the morning), If there's time (the next ones), Later (kept, out of the way), and New
+// (whatever came in since; captures are appended at the end of the file, so they land here).
+// Nothing gets thrown away by sorting; it only moves between headings.
 import { readFileSync, writeFileSync } from 'node:fs';
 import { byName } from './vault.js';
 
@@ -24,11 +29,18 @@ export function readTodos() {
   const n = byName('todo');
   if (!n) return null;
   const items = [];
+  let tier = 'new', picked = '';
   n.file && readFileSync(n.file, 'utf8').split('\n').forEach((line, i) => {
+    const pk = /^picked:\s*"?(\d{4}-\d\d-\d\d)/.exec(line);
+    if (pk && !picked) picked = pk[1];
+    const h = HEAD.exec(line);
+    if (h) { tier = tierOf(h[1]); return; }
     const m = ITEM.exec(line);
-    if (m) items.push({ line: i, done: m[2].toLowerCase() === 'x', text: m[4].trim() });
+    if (m) items.push({ line: i, done: m[2].toLowerCase() === 'x', text: m[4].trim(), tier });
   });
-  return { note: n, items };
+  // Picks are for one day. Yesterday's unfinished ones stay put until you start fresh,
+  // but the page says when they were picked.
+  return { note: n, items, picked, fresh: picked === localDay() };
 }
 
 // The page names an item by its text, not its line: lines shift with every move, and the
@@ -52,7 +64,7 @@ export function setTodo(lineNo, done) {
   return { line: lineNo, done: !!done };
 }
 
-export function addTodo(text) {
+export function addTodo(text, tier = 'new') {
   const clean = String(text || '').replace(/[\r\n]+/g, ' ').trim().slice(0, 300);
   if (!clean) throw new Error('empty');
   const n = note();
