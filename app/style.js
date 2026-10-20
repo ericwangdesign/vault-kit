@@ -75,7 +75,7 @@ export const TOKENS = `
   --t-2xl: 24px;   --lh-2xl: 28px;    /* big numbers */
   --w-body: 420;   /* running text: a touch under regular, so medium stands off it */
   --w-medium: 500; /* titles, headings, names */
-  --w-bold: 600;   /* **bold** in running text */
+  --w-bold: 500;   /* **bold** in running text: medium, never semibold */
   --tr-tight: -0.02em; --tr-snug: -0.01em; --tr-body: -0.006em;
 
   /* ---- space: a 4 grid ---- */
