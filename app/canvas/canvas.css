@@ -454,7 +454,7 @@ a.cv-card:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px;
 .cv-opt { display: flex; flex-direction: column; align-items: flex-start; gap: var(--s0); padding: var(--cv-pad-box); border: 0; border-radius: var(--cv-r-in-card); background: var(--raised); font: inherit; text-align: left; color: var(--text); cursor: pointer; transition: background .15s, box-shadow .15s; }
 .cv-opt:hover { background: color-mix(in srgb, var(--text) 8%, var(--raised)); }
 .cv-opt:focus-visible { outline: 2px solid var(--accent); outline-offset: 2px; }
-.cv-opt[aria-pressed="true"] { background: var(--accent-soft); box-shadow: 0 0 0 2px var(--accent); }
+.cv-opt[aria-pressed="true"] { background: var(--accent-soft); } /* a pick is a fill, never a ring */
 .cv-opt .l { display: flex; flex-wrap: wrap; align-items: center; gap: var(--s1) var(--s2); font-size: var(--t-md); line-height: var(--lh-md); font-weight: var(--w-medium); }
 .cv-opt[aria-pressed="true"] .l { color: var(--accent-ink); }
 .cv-opt .d { font-size: var(--t-sm); line-height: var(--lh-sm); color: var(--text-2); text-wrap: pretty; }

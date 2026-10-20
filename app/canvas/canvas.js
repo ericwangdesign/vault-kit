@@ -1,4 +1,4 @@
-/* The writing canvas. Claude writes a page as data, this draws it.
+/* The writing canvas. An agent writes a page as data, this draws it.
    A page is a <script type="application/json" id="canvas"> with a title and a list of blocks,
    followed by <script src="/canvas.js">. The block catalog is in the writing-canvas skill;
    every block here matches one entry there. Runs before DOMContentLoaded on purpose, so
@@ -404,8 +404,8 @@
     },
 
     // Ask: questions the owner answers on the page. A pick, a few picks, a number, a
-    // line. Answers save to the vault under the block's `id` (pages/_state/<page>.json) for Claude to read. `rec` marks
-    // the option Claude would pick, so it's a recommendation, not a menu. Wired after the page is drawn (ask() below).
+    // line. Answers save to the vault under the block's `id` (pages/_state/<page>.json) for the agent to read. `rec` marks
+    // the option the agent would pick, so it's a recommendation, not a menu. Wired after the page is drawn (ask() below).
     ask: function (b) {
       var id = b.id || slug(plain(b.title || 'answers'));
       return '<figure class="cv-block cv-ask' + place(b, false) + '" data-ask="' + esc(id) + '" style="margin-inline:0">' + title(b) +
