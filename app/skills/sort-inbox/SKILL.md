@@ -34,7 +34,7 @@ Duplicates: merge into one, and log the second as `merged`. Unclear ones: make t
 
 1. Remove the sorted lines from `inbox.md` (keep its frontmatter).
 2. Append one line per capture to `sorted.md`: `- **YYYY-MM-DD** <capture text> → [[note-name|Label]]` (add `, merged` for a duplicate). This is the ⌘⇧I receipt; it shows rough time only.
-3. If the vault is a git repo, commit it with a message like `Sort inbox: 2 to-dos, 1 idea`.
+3. If the vault folder has its own `.git` (not just a repo somewhere above it), commit it with a message like `Sort inbox: 2 to-dos, 1 idea`.
 4. Tell the owner in one line per capture where it went. Nothing else.
 
 Principle to keep in mind while building on this: **when to abstract information and when to be explicit.** The receipt says "today", not 21:54. A project gets a dot, not a changelog.
