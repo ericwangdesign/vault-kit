@@ -17,7 +17,7 @@ import { join } from 'node:path';
 import { fileURLToPath } from 'node:url';
 import { homedir } from 'node:os';
 import { readInbox } from './api.js';
-import { VAULT } from './vault.js';
+import { VAULT, OWN_REPO } from './vault.js';
 import { runAgent } from './agents.js';
 
 const QUIET_MS = 2 * 60 * 1000;
@@ -52,7 +52,8 @@ function run() {
     '--model', MODEL,
     '--permission-mode', 'acceptEdits',
     '--add-dir', SKILL_DIR,
-    '--allowedTools', 'Read', 'Edit', 'Write', 'Glob', 'Grep', 'Bash(git add:*)', 'Bash(git commit:*)', 'Bash(git status:*)', 'Bash(ls:*)', 'Bash(mkdir:*)',
+    '--allowedTools', 'Read', 'Edit', 'Write', 'Glob', 'Grep', 'Bash(ls:*)', 'Bash(mkdir:*)',
+    ...(OWN_REPO ? ['Bash(git add:*)', 'Bash(git commit:*)', 'Bash(git status:*)'] : []),
   ], PROMPT, {
     cwd: VAULT,
     env: { ...process.env, PATH: `/opt/homebrew/bin:/usr/local/bin:/usr/bin:/bin:${process.env.PATH || ''}` },
@@ -77,6 +78,7 @@ function run() {
 // Safety net for the cheap model: if a run wrapped a frontmatter value in curly quotes, put
 // straight ones back so the note still parses. Only touches files the last commit changed.
 function tidyFrontmatter() {
+  if (!OWN_REPO) return;
   try {
     const files = execFileSync('git', ['diff', '--name-only', 'HEAD~1', 'HEAD'], { cwd: VAULT, encoding: 'utf8' })
       .split('\n').filter((f) => f.endsWith('.md') && !f.startsWith('work/'));
