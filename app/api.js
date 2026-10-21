@@ -4,7 +4,7 @@
 import { readFileSync, writeFileSync, existsSync, mkdirSync } from 'node:fs';
 import { execFile } from 'node:child_process';
 import { join } from 'node:path';
-import { allNotes, byName, VAULT } from './vault.js';
+import { allNotes, byName, VAULT, OWN_REPO } from './vault.js';
 import { listFixes, addFix, patchFix, removeFix } from './fixes.js';
 import { editPage } from './page-edit.js';
 
@@ -18,6 +18,7 @@ const today = (d = new Date()) => `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${
 // Fire and forget. A commit that fails (nothing staged, lock held) must never
 // fail the write that already happened; it just shows up in the next one.
 export function commit(message) {
+  if (!OWN_REPO) return;
   execFile('git', ['-C', VAULT, 'add', '-A'], () =>
     execFile('git', ['-C', VAULT, 'commit', '-q', '-m', message], () => {}));
 }
