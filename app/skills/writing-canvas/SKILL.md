@@ -97,7 +97,7 @@ Create `<vault>/pages/<slug>.html`. Copy this exactly and only change the title 
 {
   "title": "Why the Tasks button is gone",
   "arc": "decision",
-  "kicker": ["Decision", "Lapis app"],
+  "kicker": ["Decision", "Notes app"],
   "dek": "One or two sentences that tell the whole story.",
   "meta": ["Oct 12, 2026"],
   "back": { "href": "/n/<note-name>", "label": "Note title" },
