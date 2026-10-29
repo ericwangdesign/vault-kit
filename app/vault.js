@@ -15,6 +15,9 @@ function onDisk(path) {
 // Local, and a git repo — Drive was doing backup badly, on a university account
 // that goes away. GitHub does it properly and keeps the history.
 export const VAULT = process.env.VAULT_PATH || join(homedir(), 'Documents/Projects/vault');
+// Only a vault with its own .git gets commits. The starter vault sits inside this kit's repo, and git would
+// otherwise climb up to it and commit your notes (and anything else changed in the kit) into the kit's history.
+export const OWN_REPO = existsSync(join(VAULT, '.git'));
 
 const FOLDER_ORDER = { personal: 0, projects: 1, thinking: 2, resources: 3, pages: 4, cuttings: 5 };
 
