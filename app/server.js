@@ -8,7 +8,7 @@ import { CSS, PAGE_CSS } from './style.js';
 import { SETTINGS_JS, SETTINGS_PANEL, BOOT_JS } from './settings.js';
 import { writeCutting, binCutting, setCuttingFolder, analyzeFolder, analysisState } from './cuttings.js';
 import { setArchived } from './archive.js';
-import { readTodos, setTodo, addTodo, removeTodo, moveTodo, startFresh, lineOfText } from './todo.js';
+import { readTodos, setTodo, addTodo, removeTodo, moveTodo, startFresh, lineOfText, splitTodo } from './todo.js';
 import { api, readInbox, hooks } from './api.js';
 import { dotSvg, FAVICON_LINK } from './favicon.js';
 import { schedule as scheduleSort, startSorter } from './sorter.js';
@@ -380,6 +380,11 @@ const todoText = (raw) => esc(raw.replace(/\s*\[\[[^\]]+\]\]/g, '')).replace(
   /\[([^\]]+)\]\((https?:\/\/[^\s)]+)\)|(https?:\/\/[^\s<]+)/g,
   (_m, label, url, bare) => `<a href="${url || bare}" target="_blank" rel="noopener">${label || bare.replace(/^https?:\/\/(www\.)?/, '').replace(/\/$/, '')}</a>`);
 
+const todoBody = (raw) => {
+  const { title, detail } = splitTodo(raw.replace(/\s*\[\[[^\]]+\]\]/g, '').trim());
+  return `<span class="tt">${todoText(title)}</span>${detail ? `<span class="td">${todoText(detail)}</span>` : ''}`;
+};
+
 // The list in the order a day uses it: what's picked for today, then what to reach for if
 // there's time, then what came in and needs a place, then everything kept for later.
 // Every button works in place (TODO_JS): rows move between sections without a reload.
@@ -398,7 +403,7 @@ function todoPage(notes) {
   const todayDone = fresh ? items.filter((i) => i.done && i.tier === 'today') : [];
   const done = items.filter((i) => i.done && !todayDone.includes(i));
   const item = (i, tier) => `<li data-text="${esc(i.text)}"><div class="todo${i.done ? ' done' : ''}" role="checkbox" aria-checked="${i.done}" tabindex="0">
-      <span class="check">${svg('check')}</span><span class="tx">${todoText(i.text)}</span>${todoActs(tier, i.done)}
+      <span class="check">${svg('check')}</span><span class="tx">${todoBody(i.text)}</span>${todoActs(tier, i.done)}
     </div></li>`;
   const list = (arr, tier) => `<ul class="rows">${arr.map((i) => item(i, tier)).join('')}</ul>`;
   const empty = (b, s) => `<div class="empty"><b>${b}</b><span>${s}</span></div>`;
