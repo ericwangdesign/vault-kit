@@ -17,6 +17,20 @@ const tierOf = (heading) => {
   return h.startsWith('today') ? 'today' : h.startsWith('if there') ? 'time' : h.startsWith('later') ? 'later' : 'new';
 };
 const p2 = (x) => String(x).padStart(2, '0');
+// A to-do reads as a short title, then its details: everything up to the first full stop is
+// the title, the rest (codes, dates, amounts) shows smaller underneath. Still one line in the
+// file, so ticking and moving don't change.
+const NOT_AN_END = /\b(incl|approx|vs|etc|e\.g|i\.e|St|Mt|No|Dr|Mr|Ms|Mrs)$/i;
+export function splitTodo(text) {
+  const s = String(text || '');
+  const re = /\.\s+(?=\S)/g;
+  let m;
+  while ((m = re.exec(s))) {
+    const head = s.slice(0, m.index);
+    if (!NOT_AN_END.test(head)) return { title: head, detail: s.slice(m.index + m[0].length) };
+  }
+  return { title: s, detail: '' };
+}
 export const localDay = (d = new Date()) => `${d.getFullYear()}-${p2(d.getMonth() + 1)}-${p2(d.getDate())}`;
 
 function note() {

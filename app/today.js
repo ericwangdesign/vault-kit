@@ -7,7 +7,7 @@ import { execFile, execFileSync } from 'node:child_process';
 import { join } from 'node:path';
 import { createHash } from 'node:crypto';
 import { section, VAULT } from './vault.js';
-import { readTodos } from './todo.js';
+import { readTodos, splitTodo } from './todo.js';
 import { readInbox } from './api.js';
 
 const p2 = (x) => String(x).padStart(2, '0');
@@ -77,7 +77,7 @@ export function todayData(notes, now = new Date()) {
   const slimTodo = (i) => {
     const link = /\[\[([^\]|]+)(?:\|[^\]]*)?\]\]/.exec(i.text);
     const text = i.text.replace(/\[\[[^\]]+\]\]/g, '').replace(/\[([^\]]+)\]\([^)]+\)/g, '$1').replace(/[\s.—-]+$/, '').trim();
-    return { text, raw: i.text, link: link ? link[1] : '', done: i.done };
+    return { text: splitTodo(text).title, raw: i.text, link: link ? link[1] : '', done: i.done };
   };
   const items = t?.items || [];
   const openIn = (k) => items.filter((i) => !i.done && i.tier === k);

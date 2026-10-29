@@ -517,7 +517,10 @@ details.block > summary:hover h2::after { border-color: var(--text); }
 .check svg.i { width: 10px; height: 10px; stroke-width: 3; opacity: 0; color: var(--btn-text); }
 .todo.done .check { background: var(--text); border-color: var(--text); }
 .todo.done .check svg.i { opacity: 1; }
-.todo.done .tx { color: var(--text-3); text-decoration: line-through; text-decoration-color: var(--line-2); }
+.todo.done .tx { color: var(--text-3); }
+.todo.done .tx > .tt, .todo.done .tx:not(:has(> .tt)) { text-decoration: line-through; text-decoration-color: var(--line-2); }
+.todo .tx .tt { display: block; }
+.todo .tx .td { display: block; margin-top: 4px; font-size: var(--t-sm); line-height: var(--lh-sm); color: var(--text-3); }
 .todo .tx { flex: 1; min-width: 0; overflow-wrap: anywhere; }
 .todo.clamp .tx { display: -webkit-box; -webkit-line-clamp: 2; -webkit-box-orient: vertical; overflow: hidden; }
 .todo img.mark { width: 16px; height: 16px; border-radius: var(--r-xs); margin-top: 2px; }
